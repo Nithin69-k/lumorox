@@ -152,7 +152,7 @@ function SearchPage() {
         <select value={String(min)} onChange={(e) => setFilter({ min: Number(e.target.value) })} aria-label="Minimum rating" className="h-11 rounded-md border border-border bg-surface px-3 text-sm">
           {[0, 5, 6, 7, 8, 9].map((n) => <option key={n} value={n}>{n === 0 ? "Any rating" : `${n}+ stars`}</option>)}
         </select>
-        <select value={sort} onChange={(e) => setFilter({ sort: e.target.value })} aria-label="Sort by" className="h-11 rounded-md border border-border bg-surface px-3 text-sm">
+        <select value={sort} onChange={(e) => setFilter({ sort: e.target.value as z.infer<typeof searchSchema>["sort"] })} aria-label="Sort by" className="h-11 rounded-md border border-border bg-surface px-3 text-sm">
           <option value="popularity">Most popular</option>
           <option value="rating">Highest rated</option>
           <option value="year">Newest</option>
