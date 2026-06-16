@@ -89,7 +89,7 @@ function MoviePage() {
             <span className="flex items-center gap-1"><Clock className="h-4 w-4" /> {Math.floor(movie.runtime / 60)}h {movie.runtime % 60}m</span>
           </div>
           <div className="mt-3 flex flex-wrap gap-2">
-            {movie.genres.map((g) => (
+            {movie.genres.map((g: string) => (
               <span key={g} className="rounded-full border border-border px-3 py-0.5 text-xs text-muted-foreground">{g}</span>
             ))}
           </div>

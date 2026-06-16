@@ -42,7 +42,7 @@ function SearchPage() {
   // debounce
   useEffect(() => {
     const t = setTimeout(() => {
-      navigate({ search: (prev) => ({ ...prev, q: input }), replace: true });
+      navigate({ search: (prev: z.infer<typeof searchSchema>) => ({ ...prev, q: input }), replace: true });
     }, 250);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -99,8 +99,8 @@ function SearchPage() {
     return list;
   }, [q, genre, year, min, sort]);
 
-  const setFilter = (patch: Record<string, unknown>) =>
-    navigate({ search: (prev) => ({ ...prev, ...patch }), replace: true });
+  const setFilter = (patch: Partial<z.infer<typeof searchSchema>>) =>
+    navigate({ search: (prev: z.infer<typeof searchSchema>) => ({ ...prev, ...patch }), replace: true });
 
   return (
     <div className="container mx-auto px-4 py-6">
