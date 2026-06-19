@@ -45,9 +45,9 @@ function HomePage() {
 
       <div className="space-y-2 pb-10">
         <MovieRow title="Trending Now" movies={trendingList} />
-        <Suspense fallback={null}><LazyRow opts={popularOpts} title="Popular This Week" /></Suspense>
-        <Suspense fallback={null}><LazyRow opts={topRatedOpts} title="Top Rated" /></Suspense>
-        <Suspense fallback={null}><LazyRow opts={upcomingOpts} title="Recent & Upcoming" /></Suspense>
+        <Suspense fallback={null}><PopularRow /></Suspense>
+        <Suspense fallback={null}><TopRatedRow /></Suspense>
+        <Suspense fallback={null}><UpcomingRow /></Suspense>
         <Suspense fallback={null}><GenreRow genre="Action" title="Action & Adventure" /></Suspense>
         <Suspense fallback={null}><GenreRow genre="Science Fiction" title="Mind-Bending Sci-Fi" /></Suspense>
         <Suspense fallback={null}><GenreRow genre="Drama" title="Drama Spotlight" /></Suspense>
@@ -82,11 +82,18 @@ function HomePage() {
   );
 }
 
-function LazyRow({ opts, title }: { opts: ReturnType<typeof queryOptions<unknown, Error, Awaited<ReturnType<typeof getPopular>>>>; title: string }) {
-  const { data } = useSuspenseQuery(opts);
-  return <MovieRow title={title} movies={data} />;
+function PopularRow() {
+  const { data } = useSuspenseQuery(popularOpts);
+  return <MovieRow title="Popular This Week" movies={data} />;
 }
-
+function TopRatedRow() {
+  const { data } = useSuspenseQuery(topRatedOpts);
+  return <MovieRow title="Top Rated" movies={data} />;
+}
+function UpcomingRow() {
+  const { data } = useSuspenseQuery(upcomingOpts);
+  return <MovieRow title="Recent & Upcoming" movies={data} />;
+}
 function GenreRow({ genre, title }: { genre: string; title?: string }) {
   const { data } = useSuspenseQuery(genreOpts(genre));
   return <MovieRow title={title ?? genre} movies={data} />;
