@@ -1,8 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Heart } from "lucide-react";
+import { useQueries } from "@tanstack/react-query";
+import { Heart, Loader2 } from "lucide-react";
 import { MovieCard } from "@/components/MovieCard";
-import { MOVIES_BY_ID } from "@/data/movies";
 import { useUserStore } from "@/store/user";
+import { getMovieDetails } from "@/lib/tmdb.functions";
+import type { Movie } from "@/data/movies";
 
 export const Route = createFileRoute("/watchlist")({
   head: () => ({
@@ -17,18 +19,39 @@ export const Route = createFileRoute("/watchlist")({
   component: WatchlistPage,
 });
 
+function useMoviesByIds(ids: string[]): { movies: Movie[]; isLoading: boolean } {
+  const results = useQueries({
+    queries: ids.map((id) => ({
+      queryKey: ["tmdb", "movie", id],
+      queryFn: () => getMovieDetails({ data: { id } }),
+      staleTime: 30 * 60_000,
+    })),
+  });
+  const movies = results
+    .map((r) => r.data)
+    .filter((m): m is Movie => Boolean(m));
+  const isLoading = results.some((r) => r.isLoading);
+  return { movies, isLoading };
+}
+
 function WatchlistPage() {
   const watchlist = useUserStore((s) => s.watchlist);
   const likes = useUserStore((s) => s.likes);
-  const movies = watchlist.map((id) => MOVIES_BY_ID.get(id)).filter(Boolean) as NonNullable<ReturnType<typeof MOVIES_BY_ID.get>>[];
-  const favs = likes.map((id) => MOVIES_BY_ID.get(id)).filter(Boolean) as NonNullable<ReturnType<typeof MOVIES_BY_ID.get>>[];
+  const { movies, isLoading } = useMoviesByIds(watchlist);
+  const { movies: favs } = useMoviesByIds(likes);
 
   return (
     <div className="container mx-auto px-4 py-6">
       <h1 className="font-display text-4xl tracking-tight sm:text-5xl">Your Watchlist</h1>
       <p className="mt-2 text-sm text-muted-foreground">Saved on this device. Sign-in sync coming soon.</p>
 
-      {movies.length === 0 ? (
+      {isLoading && watchlist.length > 0 && (
+        <p className="mt-6 flex items-center gap-2 text-sm text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin" /> Loading your saved titles…
+        </p>
+      )}
+
+      {watchlist.length === 0 ? (
         <div className="mt-10 rounded-2xl border border-dashed border-border p-12 text-center">
           <Heart className="mx-auto h-10 w-10 text-muted-foreground" />
           <p className="mt-3 font-display text-2xl">Empty for now</p>
