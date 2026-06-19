@@ -1,12 +1,13 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useMemo, useState, useEffect } from "react";
-import { Search as SearchIcon, X, Mic, MicOff } from "lucide-react";
+import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { Search as SearchIcon, X, Mic, MicOff, Loader2 } from "lucide-react";
 import { z } from "zod";
 import { zodValidator } from "@tanstack/zod-adapter";
 import { MovieCard } from "@/components/MovieCard";
-import { MOVIES } from "@/data/movies";
 import { GENRES } from "@/data/genres";
 import { motion } from "framer-motion";
+import { discoverMovies } from "@/lib/tmdb.functions";
 
 const searchSchema = z.object({
   q: z.string().catch(""),
@@ -21,7 +22,7 @@ export const Route = createFileRoute("/search")({
   head: () => ({
     meta: [
       { title: "Search Movies — CineVerse AI" },
-      { name: "description", content: "Search and filter thousands of movies by genre, rating, and year." },
+      { name: "description", content: "Search and filter thousands of movies by genre, rating, and year via TMDB." },
       { property: "og:title", content: "Search Movies — CineVerse AI" },
       { property: "og:url", content: "/search" },
     ],
@@ -39,11 +40,10 @@ function SearchPage() {
   const [listening, setListening] = useState(false);
   const [voiceSupported, setVoiceSupported] = useState(false);
 
-  // debounce
   useEffect(() => {
     const t = setTimeout(() => {
       navigate({ search: (prev: z.infer<typeof searchSchema>) => ({ ...prev, q: input }), replace: true });
-    }, 250);
+    }, 300);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [input]);
@@ -73,31 +73,12 @@ function SearchPage() {
     recog.start();
   };
 
-  const results = useMemo(() => {
-    const ql = q.trim().toLowerCase();
-    let list = MOVIES.filter((m) => {
-      if (genre && !(m.genres as readonly string[]).includes(genre)) return false;
-      if (year && String(m.year) !== year) return false;
-      if (m.rating < min) return false;
-      if (!ql) return true;
-      return (
-        m.title.toLowerCase().includes(ql) ||
-        m.director.toLowerCase().includes(ql) ||
-        m.cast.some((c) => c.toLowerCase().includes(ql)) ||
-        m.keywords.some((k) => k.toLowerCase().includes(ql)) ||
-        m.genres.some((g) => g.toLowerCase().includes(ql))
-      );
-    });
-    list = [...list].sort((a, b) => {
-      switch (sort) {
-        case "rating": return b.rating - a.rating;
-        case "year": return b.year - a.year;
-        case "title": return a.title.localeCompare(b.title);
-        default: return b.popularity - a.popularity;
-      }
-    });
-    return list;
-  }, [q, genre, year, min, sort]);
+  const { data: results = [], isFetching } = useQuery({
+    queryKey: ["tmdb", "discover", q, genre, year, min, sort],
+    queryFn: () => discoverMovies({ data: { q, genre, year, min, sort } }),
+    placeholderData: (prev) => prev,
+    staleTime: 60_000,
+  });
 
   const setFilter = (patch: Partial<z.infer<typeof searchSchema>>) =>
     navigate({ search: (prev: z.infer<typeof searchSchema>) => ({ ...prev, ...patch }), replace: true });
@@ -105,7 +86,7 @@ function SearchPage() {
   return (
     <div className="container mx-auto px-4 py-6">
       <h1 className="font-display text-4xl tracking-tight sm:text-5xl">Search the cinematic universe</h1>
-      <p className="mt-2 text-sm text-muted-foreground">Filter by genre, year, and rating. Try voice search on supported browsers.</p>
+      <p className="mt-2 text-sm text-muted-foreground">Powered by TMDB — search millions of titles, filter by genre, year, and rating.</p>
 
       <div className="mt-6 flex items-center gap-2">
         <div className="relative flex-1">
@@ -160,7 +141,8 @@ function SearchPage() {
         </select>
       </div>
 
-      <p className="mt-6 text-sm text-muted-foreground">
+      <p className="mt-6 flex items-center gap-2 text-sm text-muted-foreground">
+        {isFetching && <Loader2 className="h-4 w-4 animate-spin" />}
         {results.length} {results.length === 1 ? "result" : "results"}
       </p>
 
@@ -175,7 +157,7 @@ function SearchPage() {
         ))}
       </motion.div>
 
-      {results.length === 0 && (
+      {!isFetching && results.length === 0 && (
         <div className="rounded-2xl border border-dashed border-border p-12 text-center">
           <p className="font-display text-2xl">No matches</p>
           <p className="mt-2 text-sm text-muted-foreground">Try a different keyword, or clear your filters.</p>

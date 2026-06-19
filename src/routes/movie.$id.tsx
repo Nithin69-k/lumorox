@@ -1,21 +1,38 @@
 import { createFileRoute, notFound, Link } from "@tanstack/react-router";
+import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import { Star, Clock, Calendar, ArrowLeft, Heart, ThumbsUp, ThumbsDown, Play } from "lucide-react";
 import { motion } from "framer-motion";
-import { MOVIES_BY_ID } from "@/data/movies";
 import { MoviePoster } from "@/components/MoviePoster";
 import { MovieRow } from "@/components/MovieRow";
-import { similarTo } from "@/lib/recommendation";
 import { useUserStore } from "@/store/user";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { getMovieDetails, getSimilar } from "@/lib/tmdb.functions";
+
+const detailsOpts = (id: string) => queryOptions({
+  queryKey: ["tmdb", "movie", id],
+  queryFn: () => getMovieDetails({ data: { id } }),
+  staleTime: 30 * 60_000,
+});
+const similarOpts = (id: string) => queryOptions({
+  queryKey: ["tmdb", "similar", id],
+  queryFn: () => getSimilar({ data: { id } }),
+  staleTime: 30 * 60_000,
+});
 
 export const Route = createFileRoute("/movie/$id")({
-  loader: ({ params }) => {
-    const movie = MOVIES_BY_ID.get(params.id);
+  loader: async ({ params, context }) => {
+    const movie = await context.queryClient.ensureQueryData(detailsOpts(params.id));
     if (!movie) throw notFound();
-    return movie;
+    context.queryClient.prefetchQuery(similarOpts(params.id));
+    return {
+      title: movie.title,
+      year: movie.year,
+      overview: movie.overview,
+      posterUrl: movie.posterUrl,
+    };
   },
-  head: ({ loaderData }) =>
+  head: ({ loaderData, params }) =>
     loaderData
       ? {
           meta: [
@@ -24,9 +41,10 @@ export const Route = createFileRoute("/movie/$id")({
             { property: "og:title", content: `${loaderData.title} (${loaderData.year})` },
             { property: "og:description", content: loaderData.overview.slice(0, 200) },
             { property: "og:type", content: "video.movie" },
-            { property: "og:url", content: `/movie/${loaderData.id}` },
+            { property: "og:url", content: `/movie/${params.id}` },
+            ...(loaderData.posterUrl ? [{ property: "og:image" as const, content: loaderData.posterUrl }] : []),
           ],
-          links: [{ rel: "canonical", href: `/movie/${loaderData.id}` }],
+          links: [{ rel: "canonical", href: `/movie/${params.id}` }],
         }
       : { meta: [{ title: "Movie — CineVerse AI" }] },
   component: MoviePage,
@@ -39,24 +57,29 @@ export const Route = createFileRoute("/movie/$id")({
 });
 
 function MoviePage() {
-  const movie = Route.useLoaderData();
-  const similar = similarTo(movie.id, 14);
+  const { id } = Route.useParams();
+  const { data: movie } = useSuspenseQuery(detailsOpts(id));
+  const { data: similar = [] } = useSuspenseQuery(similarOpts(id));
   const [playing, setPlaying] = useState(false);
-  const { isLiked, isDisliked, inWatchlist } = useUserStore.getState();
-  const liked = useUserStore((s) => s.likes.includes(movie.id));
-  const disliked = useUserStore((s) => s.dislikes.includes(movie.id));
-  const inList = useUserStore((s) => s.watchlist.includes(movie.id));
-  const userRating = useUserStore((s) => s.ratings[movie.id]);
+  const liked = useUserStore((s) => s.likes.includes(id));
+  const disliked = useUserStore((s) => s.dislikes.includes(id));
+  const inList = useUserStore((s) => s.watchlist.includes(id));
+  const userRating = useUserStore((s) => s.ratings[id]);
   const toggleLike = useUserStore((s) => s.toggleLike);
   const toggleDislike = useUserStore((s) => s.toggleDislike);
   const toggleWatchlist = useUserStore((s) => s.toggleWatchlist);
   const rate = useUserStore((s) => s.rate);
-  void isLiked; void isDisliked; void inWatchlist;
+
+  if (!movie) return null;
 
   return (
     <article className="-mt-28 md:-mt-16">
       <div className="relative h-[70vh] min-h-[480px] w-full overflow-hidden">
-        <MoviePoster movie={movie} rounded="" className="scale-110 brightness-[0.4] blur-sm" />
+        <MoviePoster
+          movie={{ ...movie, posterUrl: movie.backdropUrl ?? movie.posterUrl }}
+          rounded=""
+          className="scale-110 brightness-[0.4] blur-sm"
+        />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-background/40" />
         <Link
           to="/"
@@ -75,18 +98,16 @@ function MoviePage() {
           <MoviePoster movie={movie} rounded="rounded-xl" />
         </motion.div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-        >
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
           <h1 className="font-display text-4xl leading-none tracking-tight sm:text-6xl">{movie.title}</h1>
           <div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
             <span className="flex items-center gap-1 text-[var(--gold)]">
               <Star className="h-4 w-4 fill-current" /> {movie.rating.toFixed(1)}
             </span>
             <span className="flex items-center gap-1"><Calendar className="h-4 w-4" /> {movie.year}</span>
-            <span className="flex items-center gap-1"><Clock className="h-4 w-4" /> {Math.floor(movie.runtime / 60)}h {movie.runtime % 60}m</span>
+            {movie.runtime > 0 && (
+              <span className="flex items-center gap-1"><Clock className="h-4 w-4" /> {Math.floor(movie.runtime / 60)}h {movie.runtime % 60}m</span>
+            )}
           </div>
           <div className="mt-3 flex flex-wrap gap-2">
             {movie.genres.map((g: string) => (
@@ -156,14 +177,18 @@ function MoviePage() {
           </div>
 
           <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2">
-            <div>
-              <h2 className="text-xs font-medium uppercase tracking-widest text-muted-foreground">Director</h2>
-              <p className="mt-1 text-foreground">{movie.director}</p>
-            </div>
-            <div>
-              <h2 className="text-xs font-medium uppercase tracking-widest text-muted-foreground">Cast</h2>
-              <p className="mt-1 text-foreground">{movie.cast.join(", ")}</p>
-            </div>
+            {movie.director && (
+              <div>
+                <h2 className="text-xs font-medium uppercase tracking-widest text-muted-foreground">Director</h2>
+                <p className="mt-1 text-foreground">{movie.director}</p>
+              </div>
+            )}
+            {movie.cast.length > 0 && (
+              <div>
+                <h2 className="text-xs font-medium uppercase tracking-widest text-muted-foreground">Cast</h2>
+                <p className="mt-1 text-foreground">{movie.cast.join(", ")}</p>
+              </div>
+            )}
           </div>
         </motion.div>
       </div>

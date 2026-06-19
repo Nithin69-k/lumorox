@@ -1,31 +1,43 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useSuspenseQuery, queryOptions } from "@tanstack/react-query";
+import { Suspense } from "react";
 import { MovieRow } from "@/components/MovieRow";
 import { Hero } from "@/components/Hero";
-import { trending, topRated, popular, upcoming, recommendFor, byGenre } from "@/lib/recommendation";
-import { useUserStore } from "@/store/user";
 import { GENRES } from "@/data/genres";
 import { motion } from "framer-motion";
+import {
+  getTrending, getPopular, getTopRated, getUpcoming, getByGenre,
+} from "@/lib/tmdb.functions";
+
+const trendingOpts = queryOptions({ queryKey: ["tmdb", "trending"], queryFn: () => getTrending(), staleTime: 5 * 60_000 });
+const popularOpts = queryOptions({ queryKey: ["tmdb", "popular"], queryFn: () => getPopular(), staleTime: 5 * 60_000 });
+const topRatedOpts = queryOptions({ queryKey: ["tmdb", "topRated"], queryFn: () => getTopRated(), staleTime: 10 * 60_000 });
+const upcomingOpts = queryOptions({ queryKey: ["tmdb", "upcoming"], queryFn: () => getUpcoming(), staleTime: 10 * 60_000 });
+const genreOpts = (g: string) => queryOptions({ queryKey: ["tmdb", "genre", g], queryFn: () => getByGenre({ data: { genre: g } }), staleTime: 10 * 60_000 });
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       { title: "CineVerse AI — Discover Your Next Favorite Movie" },
-      { name: "description", content: "Trending, top rated, and personalized movie recommendations powered by a hybrid AI engine." },
+      { name: "description", content: "Trending, top rated, and personalized movie recommendations powered by TMDB." },
       { property: "og:title", content: "CineVerse AI — Discover Your Next Favorite Movie" },
       { property: "og:description", content: "Trending, top rated, and personalized movie recommendations." },
       { property: "og:url", content: "/" },
     ],
     links: [{ rel: "canonical", href: "/" }],
   }),
+  loader: ({ context }) => {
+    context.queryClient.ensureQueryData(trendingOpts);
+    context.queryClient.prefetchQuery(popularOpts);
+    context.queryClient.prefetchQuery(topRatedOpts);
+    context.queryClient.prefetchQuery(upcomingOpts);
+  },
   component: HomePage,
 });
 
 function HomePage() {
-  const signals = useUserStore((s) => ({ likes: s.likes, dislikes: s.dislikes, watchlist: s.watchlist, ratings: s.ratings }));
-  const trendingList = trending();
+  const { data: trendingList } = useSuspenseQuery(trendingOpts);
   const hero = trendingList[0];
-  const recs = recommendFor(signals, 18);
-  const showPersonal = signals.likes.length + signals.watchlist.length + Object.keys(signals.ratings).length > 0;
 
   return (
     <>
@@ -33,14 +45,13 @@ function HomePage() {
 
       <div className="space-y-2 pb-10">
         <MovieRow title="Trending Now" movies={trendingList} />
-        {showPersonal && <MovieRow title="Recommended For You" movies={recs} />}
-        <MovieRow title="Popular This Week" movies={popular()} />
-        <MovieRow title="Top Rated" movies={topRated()} />
-        <MovieRow title="Recent & Upcoming" movies={upcoming()} />
-        <MovieRow title="Action & Adventure" movies={byGenre("Action")} />
-        <MovieRow title="Mind-Bending Sci-Fi" movies={byGenre("Science Fiction")} />
-        <MovieRow title="Drama Spotlight" movies={byGenre("Drama")} />
-        <MovieRow title="Animation Picks" movies={byGenre("Animation")} />
+        <Suspense fallback={null}><LazyRow opts={popularOpts} title="Popular This Week" /></Suspense>
+        <Suspense fallback={null}><LazyRow opts={topRatedOpts} title="Top Rated" /></Suspense>
+        <Suspense fallback={null}><LazyRow opts={upcomingOpts} title="Recent & Upcoming" /></Suspense>
+        <Suspense fallback={null}><GenreRow genre="Action" title="Action & Adventure" /></Suspense>
+        <Suspense fallback={null}><GenreRow genre="Science Fiction" title="Mind-Bending Sci-Fi" /></Suspense>
+        <Suspense fallback={null}><GenreRow genre="Drama" title="Drama Spotlight" /></Suspense>
+        <Suspense fallback={null}><GenreRow genre="Animation" title="Animation Picks" /></Suspense>
 
         <section className="container mx-auto px-4 py-10">
           <h2 className="font-display text-3xl tracking-wide">Browse by Genre</h2>
@@ -69,4 +80,14 @@ function HomePage() {
       </div>
     </>
   );
+}
+
+function LazyRow({ opts, title }: { opts: ReturnType<typeof queryOptions<unknown, Error, Awaited<ReturnType<typeof getPopular>>>>; title: string }) {
+  const { data } = useSuspenseQuery(opts);
+  return <MovieRow title={title} movies={data} />;
+}
+
+function GenreRow({ genre, title }: { genre: string; title?: string }) {
+  const { data } = useSuspenseQuery(genreOpts(genre));
+  return <MovieRow title={title ?? genre} movies={data} />;
 }
