@@ -18,9 +18,9 @@ const genreOpts = (g: string) => queryOptions({ queryKey: ["tmdb", "genre", g], 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "CineVerse AI — Discover Your Next Favorite Movie" },
+      { title: "LumoroX AI — Discover Your Next Favorite Movie" },
       { name: "description", content: "Trending, top rated, and personalized movie recommendations powered by TMDB." },
-      { property: "og:title", content: "CineVerse AI — Discover Your Next Favorite Movie" },
+      { property: "og:title", content: "LumoroX AI — Discover Your Next Favorite Movie" },
       { property: "og:description", content: "Trending, top rated, and personalized movie recommendations." },
       { property: "og:url", content: "/" },
     ],

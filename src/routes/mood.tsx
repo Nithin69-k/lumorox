@@ -10,9 +10,9 @@ import { Loader2 } from "lucide-react";
 export const Route = createFileRoute("/mood")({
   head: () => ({
     meta: [
-      { title: "Mood Recommendations — CineVerse AI" },
+      { title: "Mood Recommendations — LumoroX AI" },
       { name: "description", content: "Pick a mood and get instant cinematic recommendations curated for the feeling." },
-      { property: "og:title", content: "Mood Recommendations — CineVerse AI" },
+      { property: "og:title", content: "Mood Recommendations — LumoroX AI" },
       { property: "og:url", content: "/mood" },
     ],
     links: [{ rel: "canonical", href: "/mood" }],

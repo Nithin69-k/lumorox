@@ -21,9 +21,9 @@ export const Route = createFileRoute("/search")({
   validateSearch: zodValidator(searchSchema),
   head: () => ({
     meta: [
-      { title: "Search Movies — CineVerse AI" },
+      { title: "Search Movies — LumoroX AI" },
       { name: "description", content: "Search and filter thousands of movies by genre, rating, and year via TMDB." },
-      { property: "og:title", content: "Search Movies — CineVerse AI" },
+      { property: "og:title", content: "Search Movies — LumoroX AI" },
       { property: "og:url", content: "/search" },
     ],
     links: [{ rel: "canonical", href: "/search" }],
