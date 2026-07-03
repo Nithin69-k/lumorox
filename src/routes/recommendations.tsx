@@ -9,9 +9,9 @@ import type { Movie } from "@/data/movies";
 export const Route = createFileRoute("/recommendations")({
   head: () => ({
     meta: [
-      { title: "Personalized Recommendations — CineVerse AI" },
+      { title: "Personalized Recommendations — LumoroX AI" },
       { name: "description", content: "Recommendations tuned to your taste, powered by TMDB and your watch signals." },
-      { property: "og:title", content: "Personalized Recommendations — CineVerse AI" },
+      { property: "og:title", content: "Personalized Recommendations — LumoroX AI" },
       { property: "og:url", content: "/recommendations" },
     ],
     links: [{ rel: "canonical", href: "/recommendations" }],

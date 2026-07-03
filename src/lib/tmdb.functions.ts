@@ -20,17 +20,57 @@ export const GENRE_NAME_TO_ID: Record<string, number> = {
   "Science Fiction": 878, "Thriller": 53, "War": 10752, "Western": 37,
 };
 
+// In-memory TTL cache (per warm worker instance). Reduces TMDB calls and
+// smooths bursty traffic (search typing, repeated route visits).
+interface CacheEntry { expires: number; data: unknown }
+const CACHE = new Map<string, CacheEntry>();
+const MAX_ENTRIES = 500;
+
+// TTLs (ms) tuned per endpoint volatility
+const TTL_DEFAULT = 10 * 60_000;
+const TTL_BY_PREFIX: Array<[string, number]> = [
+  ["/trending", 30 * 60_000],
+  ["/movie/popular", 60 * 60_000],
+  ["/movie/top_rated", 6 * 60 * 60_000],
+  ["/movie/upcoming", 60 * 60_000],
+  ["/discover/movie", 30 * 60_000],
+  ["/search/movie", 10 * 60_000],
+  ["/movie/", 6 * 60 * 60_000], // details + recommendations
+];
+function ttlFor(path: string): number {
+  for (const [p, t] of TTL_BY_PREFIX) if (path.startsWith(p)) return t;
+  return TTL_DEFAULT;
+}
+
 async function tmdb<T>(path: string, params: Record<string, string | number | undefined> = {}): Promise<T> {
   const key = process.env.TMDB_API_KEY;
   if (!key) throw new Error("TMDB_API_KEY not configured");
   const url = new URL(`${TMDB_BASE}${path}`);
-  url.searchParams.set("api_key", key);
   for (const [k, v] of Object.entries(params)) {
     if (v !== undefined && v !== "" && v !== null) url.searchParams.set(k, String(v));
   }
-  const res = await fetch(url.toString());
-  if (!res.ok) throw new Error(`TMDB ${path} ${res.status}`);
-  return (await res.json()) as T;
+  const cacheKey = `${path}?${url.searchParams.toString()}`;
+  const now = Date.now();
+  const hit = CACHE.get(cacheKey);
+  if (hit && hit.expires > now) return hit.data as T;
+
+  url.searchParams.set("api_key", key);
+  const res = await fetch(url.toString(), {
+    // Also let the platform fetch cache dedupe identical concurrent requests
+    cf: { cacheTtl: Math.floor(ttlFor(path) / 1000), cacheEverything: true },
+  } as RequestInit);
+  if (!res.ok) {
+    // On failure, serve stale if available
+    if (hit) return hit.data as T;
+    throw new Error(`TMDB ${path} ${res.status}`);
+  }
+  const data = (await res.json()) as T;
+  if (CACHE.size >= MAX_ENTRIES) {
+    const oldest = CACHE.keys().next().value;
+    if (oldest) CACHE.delete(oldest);
+  }
+  CACHE.set(cacheKey, { expires: now + ttlFor(path), data });
+  return data;
 }
 
 interface TmdbListItem {

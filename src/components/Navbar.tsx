@@ -51,7 +51,7 @@ export function Navbar() {
             <Film className="h-5 w-5 text-white" />
           </div>
           <span className="font-display text-2xl tracking-[0.15em] text-foreground">
-            CINE<span className="text-brand">VERSE</span>
+            LUMORO<span className="text-brand">X</span>
           </span>
         </Link>
 

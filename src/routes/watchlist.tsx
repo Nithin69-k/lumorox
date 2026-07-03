@@ -9,9 +9,9 @@ import type { Movie } from "@/data/movies";
 export const Route = createFileRoute("/watchlist")({
   head: () => ({
     meta: [
-      { title: "My Watchlist — CineVerse AI" },
+      { title: "My Watchlist — LumoroX AI" },
       { name: "description", content: "Movies you've saved to watch later, stored privately on your device." },
-      { property: "og:title", content: "My Watchlist — CineVerse AI" },
+      { property: "og:title", content: "My Watchlist — LumoroX AI" },
       { property: "og:url", content: "/watchlist" },
     ],
     links: [{ rel: "canonical", href: "/watchlist" }],

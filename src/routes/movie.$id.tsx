@@ -36,7 +36,7 @@ export const Route = createFileRoute("/movie/$id")({
     loaderData
       ? {
           meta: [
-            { title: `${loaderData.title} (${loaderData.year}) — CineVerse AI` },
+            { title: `${loaderData.title} (${loaderData.year}) — LumoroX AI` },
             { name: "description", content: loaderData.overview.slice(0, 155) },
             { property: "og:title", content: `${loaderData.title} (${loaderData.year})` },
             { property: "og:description", content: loaderData.overview.slice(0, 200) },
@@ -46,7 +46,7 @@ export const Route = createFileRoute("/movie/$id")({
           ],
           links: [{ rel: "canonical", href: `/movie/${params.id}` }],
         }
-      : { meta: [{ title: "Movie — CineVerse AI" }] },
+      : { meta: [{ title: "Movie — LumoroX AI" }] },
   component: MoviePage,
   notFoundComponent: () => (
     <div className="container mx-auto px-4 py-20 text-center">
