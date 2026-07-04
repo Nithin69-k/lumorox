@@ -54,7 +54,13 @@ export function MovieCard({ movie, index = 0, className, reason }: Props) {
           <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">
             {movie.year} · {movie.genres.slice(0, 2).join(", ")}
           </p>
+          {reason && (
+            <p className="mt-1 line-clamp-2 text-[11px] leading-snug text-brand/90">
+              {reason}
+            </p>
+          )}
         </div>
+
       </Link>
     </motion.div>
   );
