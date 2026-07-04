@@ -47,13 +47,14 @@ function HomePage() {
 
       <div className="space-y-2 pb-10">
         <MovieRow title="Trending Now" movies={trendingList} />
-        <Suspense fallback={null}><PopularRow /></Suspense>
-        <Suspense fallback={null}><TopRatedRow /></Suspense>
-        <Suspense fallback={null}><UpcomingRow /></Suspense>
-        <Suspense fallback={null}><GenreRow genre="Action" title="Action & Adventure" /></Suspense>
-        <Suspense fallback={null}><GenreRow genre="Science Fiction" title="Mind-Bending Sci-Fi" /></Suspense>
-        <Suspense fallback={null}><GenreRow genre="Drama" title="Drama Spotlight" /></Suspense>
-        <Suspense fallback={null}><GenreRow genre="Animation" title="Animation Picks" /></Suspense>
+        <Suspense fallback={<MovieRowSkeleton title="Popular This Week" />}><PopularRow /></Suspense>
+        <Suspense fallback={<MovieRowSkeleton title="Top Rated" />}><TopRatedRow /></Suspense>
+        <Suspense fallback={<MovieRowSkeleton title="Recent & Upcoming" />}><UpcomingRow /></Suspense>
+        <Suspense fallback={<MovieRowSkeleton title="Action & Adventure" />}><GenreRow genre="Action" title="Action & Adventure" /></Suspense>
+        <Suspense fallback={<MovieRowSkeleton title="Mind-Bending Sci-Fi" />}><GenreRow genre="Science Fiction" title="Mind-Bending Sci-Fi" /></Suspense>
+        <Suspense fallback={<MovieRowSkeleton title="Drama Spotlight" />}><GenreRow genre="Drama" title="Drama Spotlight" /></Suspense>
+        <Suspense fallback={<MovieRowSkeleton title="Animation Picks" />}><GenreRow genre="Animation" title="Animation Picks" /></Suspense>
+
 
         <section className="container mx-auto px-4 py-10">
           <h2 className="font-display text-3xl tracking-wide">Browse by Genre</h2>
