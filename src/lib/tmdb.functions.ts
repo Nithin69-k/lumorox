@@ -262,3 +262,214 @@ export const getSimilar = createServerFn({ method: "GET" })
       return [] as Movie[];
     }
   });
+
+// ============================================================================
+// Personalized recommendations (Phase 1 + 2): candidate pool from user seeds,
+// enriched with details (director/cast/keywords), scored locally, explained.
+// ============================================================================
+
+async function fetchDetails(id: string): Promise<Movie | null> {
+  try {
+    const it = await tmdb<TmdbDetails>(`/movie/${id}`, {
+      append_to_response: "credits,keywords",
+    });
+    const year = Number((it.release_date || "").slice(0, 4)) || 0;
+    const genres = (it.genres ?? []).map((g) => g.name as Genre).filter((g): g is Genre => Boolean(g));
+    return {
+      id: String(it.id),
+      title: it.title || it.name || "Untitled",
+      year,
+      genres,
+      rating: Math.round((it.vote_average ?? 0) * 10) / 10,
+      runtime: it.runtime ?? 0,
+      overview: it.overview || "",
+      director: it.credits?.crew?.find((c) => c.job === "Director")?.name || "",
+      cast: (it.credits?.cast ?? []).slice(0, 8).map((c) => c.name),
+      keywords: (it.keywords?.keywords ?? []).slice(0, 10).map((k) => k.name),
+      popularity: Math.min(100, Math.round(it.popularity ?? 0)),
+      posterHue: (it.id * 37) % 360,
+      posterUrl: it.poster_path ? `${IMG}/w500${it.poster_path}` : null,
+      backdropUrl: it.backdrop_path ? `${IMG}/original${it.backdrop_path}` : null,
+      trailerYoutubeId: null,
+    };
+  } catch {
+    return null;
+  }
+}
+
+async function mapWithConcurrency<T, R>(items: T[], limit: number, fn: (t: T) => Promise<R>): Promise<R[]> {
+  const results: R[] = new Array(items.length);
+  let i = 0;
+  async function worker() {
+    while (true) {
+      const idx = i++;
+      if (idx >= items.length) return;
+      results[idx] = await fn(items[idx]);
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
+  return results;
+}
+
+const overlap = <T,>(a: readonly T[], b: readonly T[]) => a.filter((x) => b.includes(x)).length;
+
+export interface ScoreBreakdown {
+  genre: number;
+  keyword: number;
+  cast: number;
+  director: number;
+  year: number;
+  popularity: number;
+  quality: number;
+  total: number;
+}
+
+export interface ScoredMovie {
+  movie: Movie;
+  score: number;
+  breakdown: ScoreBreakdown;
+  reason: string;
+  matchedSeedId?: string;
+  matchedSeedTitle?: string;
+}
+
+function contentSimVsSeeds(candidate: Movie, seeds: Movie[]): {
+  breakdown: ScoreBreakdown;
+  best: { seed: Movie; score: number } | null;
+} {
+  if (seeds.length === 0) {
+    const quality = candidate.rating / 10;
+    const popularity = candidate.popularity / 100;
+    return {
+      breakdown: { genre: 0, keyword: 0, cast: 0, director: 0, year: 0, popularity, quality, total: quality * 0.5 + popularity * 0.5 },
+      best: null,
+    };
+  }
+  let sumGenre = 0, sumKw = 0, sumCast = 0, sumDir = 0, sumYear = 0;
+  let best: { seed: Movie; score: number } | null = null;
+  for (const seed of seeds) {
+    const g = overlap(candidate.genres, seed.genres) / Math.max(candidate.genres.length, seed.genres.length, 1);
+    const k = overlap(candidate.keywords, seed.keywords) / Math.max(candidate.keywords.length, seed.keywords.length, 1);
+    const c = overlap(candidate.cast, seed.cast) / Math.max(candidate.cast.length, seed.cast.length, 1);
+    const d = seed.director && candidate.director === seed.director ? 1 : 0;
+    const y = 1 - Math.min(Math.abs(candidate.year - seed.year) / 40, 1);
+    const pair = g * 0.45 + k * 0.2 + c * 0.15 + d * 0.1 + y * 0.1;
+    sumGenre += g; sumKw += k; sumCast += c; sumDir += d; sumYear += y;
+    if (!best || pair > best.score) best = { seed, score: pair };
+  }
+  const n = seeds.length;
+  const content = (sumGenre / n) * 0.45 + (sumKw / n) * 0.2 + (sumCast / n) * 0.15 + (sumDir / n) * 0.1 + (sumYear / n) * 0.1;
+  const popularity = candidate.popularity / 100;
+  const quality = candidate.rating / 10;
+  const total = content * 0.6 + popularity * 0.2 + quality * 0.2;
+  return {
+    breakdown: {
+      genre: sumGenre / n,
+      keyword: sumKw / n,
+      cast: sumCast / n,
+      director: sumDir / n,
+      year: sumYear / n,
+      popularity,
+      quality,
+      total,
+    },
+    best,
+  };
+}
+
+function buildReason(candidate: Movie, best: { seed: Movie; score: number } | null, ratings: Record<string, number>): string {
+  if (!best) {
+    if (candidate.rating >= 8) return `Top-rated pick — ${candidate.rating.toFixed(1)}/10 on TMDB`;
+    return "Trending across the LumoroX catalog";
+  }
+  const seed = best.seed;
+  const seedRating = ratings[seed.id];
+  const dirMatch = seed.director && candidate.director === seed.director;
+  const sharedCast = candidate.cast.filter((c) => seed.cast.includes(c));
+  const sharedKw = candidate.keywords.filter((k) => seed.keywords.includes(k));
+  const sharedGenres = candidate.genres.filter((g) => seed.genres.includes(g));
+
+  if (dirMatch) return `Directed by ${candidate.director}, like ${seed.title}`;
+  if (sharedCast.length > 0) return `Stars ${sharedCast[0]}, like ${seed.title}`;
+  if (sharedKw.length >= 2) return `Shares themes (${sharedKw.slice(0, 2).join(", ")}) with ${seed.title}`;
+  if (seedRating && seedRating >= 8) return `Because you rated ${seed.title} ${seedRating}/10`;
+  if (sharedGenres.length > 0) return `${sharedGenres.slice(0, 2).join(" · ")} — like ${seed.title}`;
+  return `Similar in feel to ${seed.title}`;
+}
+
+export const getPersonalizedRecommendations = createServerFn({ method: "POST" })
+  .inputValidator((d: {
+    likes: string[];
+    dislikes: string[];
+    watchlist: string[];
+    ratings: Record<string, number>;
+  }) => z.object({
+    likes: z.array(z.string()),
+    dislikes: z.array(z.string()),
+    watchlist: z.array(z.string()),
+    ratings: z.record(z.string(), z.number()),
+  }).parse(d))
+  .handler(async ({ data }): Promise<ScoredMovie[]> => {
+    // Build seed IDs: liked + highly rated (>=7), cap to 6 to control API cost
+    const highlyRated = Object.entries(data.ratings).filter(([, r]) => r >= 7).map(([id]) => id);
+    const seedIds = Array.from(new Set([...data.likes, ...highlyRated])).slice(0, 6);
+
+    if (seedIds.length === 0) {
+      // Cold start: return trending as ScoredMovie w/ generic reasons
+      const trending = await tmdb<{ results: TmdbListItem[] }>("/trending/movie/week");
+      return normalizeList(trending.results).slice(0, 24).map((m): ScoredMovie => ({
+        movie: m,
+        score: m.rating / 10 * 0.5 + m.popularity / 100 * 0.5,
+        breakdown: { genre: 0, keyword: 0, cast: 0, director: 0, year: 0, popularity: m.popularity / 100, quality: m.rating / 10, total: 0 },
+        reason: m.rating >= 8 ? `Top-rated — ${m.rating.toFixed(1)}/10 on TMDB` : "Trending this week",
+      }));
+    }
+
+    // 1. Fetch seed details (enriched) in parallel
+    const seeds = (await Promise.all(seedIds.map((id) => fetchDetails(id)))).filter((m): m is Movie => Boolean(m));
+
+    // 2. Fetch TMDB recommendations for each seed in parallel
+    const recLists = await Promise.all(
+      seedIds.map(async (id) => {
+        try {
+          const res = await tmdb<{ results: TmdbListItem[] }>(`/movie/${id}/recommendations`);
+          return normalizeList(res.results);
+        } catch { return [] as Movie[]; }
+      }),
+    );
+
+    // 3. Merge unique, filter blocked
+    const blocked = new Set([...data.dislikes, ...data.likes, ...data.watchlist]);
+    const merged = new Map<string, Movie>();
+    for (const list of recLists) {
+      for (const m of list) {
+        if (blocked.has(m.id) || merged.has(m.id)) continue;
+        merged.set(m.id, m);
+      }
+    }
+
+    // 4. Cap candidate pool for enrichment (avoid API blowup)
+    const pool = Array.from(merged.values())
+      .sort((a, b) => (b.rating * 0.6 + b.popularity / 100 * 0.4) - (a.rating * 0.6 + a.popularity / 100 * 0.4))
+      .slice(0, 36);
+
+    // 5. Enrich each candidate with details in parallel (cached; concurrency capped)
+    const enriched = (await mapWithConcurrency(pool, 6, (m) => fetchDetails(m.id)))
+      .filter((m): m is Movie => Boolean(m));
+
+    // 6. Score
+    const scored: ScoredMovie[] = enriched.map((cand) => {
+      const { breakdown, best } = contentSimVsSeeds(cand, seeds);
+      return {
+        movie: cand,
+        score: breakdown.total,
+        breakdown,
+        reason: buildReason(cand, best, data.ratings),
+        matchedSeedId: best?.seed.id,
+        matchedSeedTitle: best?.seed.title,
+      };
+    });
+
+    return scored.sort((a, b) => b.score - a.score).slice(0, 24);
+  });
+
