@@ -2,12 +2,14 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useSuspenseQuery, queryOptions } from "@tanstack/react-query";
 import { Suspense } from "react";
 import { MovieRow } from "@/components/MovieRow";
+import { MovieRowSkeleton } from "@/components/MovieCardSkeleton";
 import { Hero } from "@/components/Hero";
 import { GENRES } from "@/data/genres";
 import { motion } from "framer-motion";
 import {
   getTrending, getPopular, getTopRated, getUpcoming, getByGenre,
 } from "@/lib/tmdb.functions";
+
 
 const trendingOpts = queryOptions({ queryKey: ["tmdb", "trending"], queryFn: () => getTrending(), staleTime: 5 * 60_000 });
 const popularOpts = queryOptions({ queryKey: ["tmdb", "popular"], queryFn: () => getPopular(), staleTime: 5 * 60_000 });
