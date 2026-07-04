@@ -10,9 +10,11 @@ interface Props {
   movie: Movie;
   index?: number;
   className?: string;
+  reason?: string;
 }
 
-export function MovieCard({ movie, index = 0, className }: Props) {
+export function MovieCard({ movie, index = 0, className, reason }: Props) {
+
   const inWatchlist = useUserStore((s) => s.watchlist.includes(movie.id));
   const toggle = useUserStore((s) => s.toggleWatchlist);
 
