@@ -10,9 +10,11 @@ interface Props {
   movie: Movie;
   index?: number;
   className?: string;
+  reason?: string;
 }
 
-export function MovieCard({ movie, index = 0, className }: Props) {
+export function MovieCard({ movie, index = 0, className, reason }: Props) {
+
   const inWatchlist = useUserStore((s) => s.watchlist.includes(movie.id));
   const toggle = useUserStore((s) => s.toggleWatchlist);
 
@@ -52,7 +54,13 @@ export function MovieCard({ movie, index = 0, className }: Props) {
           <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">
             {movie.year} · {movie.genres.slice(0, 2).join(", ")}
           </p>
+          {reason && (
+            <p className="mt-1 line-clamp-2 text-[11px] leading-snug text-brand/90">
+              {reason}
+            </p>
+          )}
         </div>
+
       </Link>
     </motion.div>
   );
