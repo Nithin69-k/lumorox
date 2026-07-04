@@ -25,7 +25,7 @@ export function Navbar() {
 
   useEffect(() => {
     if (typeof document === "undefined") return;
-    const saved = localStorage.getItem("cineverse-theme");
+    const saved = localStorage.getItem("lumorox-theme");
     const isLight = saved === "light";
     setLight(isLight);
     document.documentElement.classList.toggle("light", isLight);
@@ -35,7 +35,7 @@ export function Navbar() {
     const next = !light;
     setLight(next);
     document.documentElement.classList.toggle("light", next);
-    localStorage.setItem("cineverse-theme", next ? "light" : "dark");
+    localStorage.setItem("lumorox-theme", next ? "light" : "dark");
   };
 
   return (

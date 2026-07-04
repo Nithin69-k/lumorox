@@ -39,7 +39,7 @@ export const useUserStore = create<State>()(
       isDisliked: (id) => get().dislikes.includes(id),
     }),
     {
-      name: "cineverse-user-v1",
+      name: "lumorox-user-v1",
       storage: createJSONStorage(() => (typeof window !== "undefined" ? localStorage : (undefined as unknown as Storage))),
     },
   ),
