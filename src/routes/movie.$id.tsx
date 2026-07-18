@@ -61,6 +61,11 @@ function MoviePage() {
   const { id } = Route.useParams();
   const { data: movie } = useSuspenseQuery(detailsOpts(id));
   const { data: similar = [] } = useSuspenseQuery(similarOpts(id));
+  const { data: semantic = [] } = useQuery({
+    queryKey: ["semantic", "similar", id],
+    queryFn: () => getSemanticSimilar({ data: { id, limit: 12 } }),
+    staleTime: 60 * 60_000,
+  });
   const [playing, setPlaying] = useState(false);
   const liked = useUserStore((s) => s.likes.includes(id));
   const disliked = useUserStore((s) => s.dislikes.includes(id));
