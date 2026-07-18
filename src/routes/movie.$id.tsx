@@ -1,5 +1,5 @@
 import { createFileRoute, notFound, Link } from "@tanstack/react-router";
-import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
+import { queryOptions, useSuspenseQuery, useQuery } from "@tanstack/react-query";
 import { Star, Clock, Calendar, ArrowLeft, Heart, ThumbsUp, ThumbsDown, Play } from "lucide-react";
 import { motion } from "framer-motion";
 import { MoviePoster } from "@/components/MoviePoster";
@@ -8,6 +8,7 @@ import { useUserStore } from "@/store/user";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { getMovieDetails, getSimilar } from "@/lib/tmdb.functions";
+import { getSemanticSimilar } from "@/lib/semantic.functions";
 
 const detailsOpts = (id: string) => queryOptions({
   queryKey: ["tmdb", "movie", id],
