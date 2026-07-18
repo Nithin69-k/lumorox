@@ -14,13 +14,47 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      movie_embeddings: {
+        Row: {
+          embedding: string
+          text_hash: string
+          title: string
+          tmdb_id: string
+          updated_at: string
+        }
+        Insert: {
+          embedding: string
+          text_hash: string
+          title: string
+          tmdb_id: string
+          updated_at?: string
+        }
+        Update: {
+          embedding?: string
+          text_hash?: string
+          title?: string
+          tmdb_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      match_movie_embeddings: {
+        Args: {
+          exclude_id?: string
+          match_count?: number
+          query_embedding: string
+        }
+        Returns: {
+          similarity: number
+          title: string
+          tmdb_id: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
