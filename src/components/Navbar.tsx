@@ -1,11 +1,12 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Film, Search, Heart, Sparkles, Smile, Sun, Moon } from "lucide-react";
+import { Film, Search, Heart, Sparkles, Smile, Sun, Moon, Wand2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 
 const links = [
   { to: "/", label: "Home", icon: Film },
   { to: "/search", label: "Search", icon: Search },
+  { to: "/ask", label: "Ask AI", icon: Wand2 },
   { to: "/recommendations", label: "For You", icon: Sparkles },
   { to: "/mood", label: "Mood", icon: Smile },
   { to: "/watchlist", label: "Watchlist", icon: Heart },
