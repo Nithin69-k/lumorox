@@ -219,6 +219,12 @@ function MoviePage() {
       )}
 
       <div className="mt-16">
+        {semantic.length > 0 && (
+          <MovieRow
+            title="Semantically Similar (AI)"
+            movies={semantic.map((s) => s.movie)}
+          />
+        )}
         <MovieRow title="More Like This" movies={similar} emptyHint="No similar titles yet." />
       </div>
     </article>
