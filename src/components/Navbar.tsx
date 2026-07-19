@@ -29,6 +29,8 @@ export function Navbar() {
     toast.success("Signed out");
     navigate({ to: "/" });
   };
+
+  useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
