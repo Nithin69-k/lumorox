@@ -38,11 +38,91 @@ export type Database = {
         }
         Relationships: []
       }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          display_name: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          id: string
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      user_ratings: {
+        Row: {
+          created_at: string
+          id: string
+          rating: number
+          tmdb_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          rating: number
+          tmdb_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          rating?: number
+          tmdb_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_watchlist: {
+        Row: {
+          created_at: string
+          id: string
+          tmdb_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          tmdb_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          tmdb_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      collaborative_recommendations: {
+        Args: { _limit?: number; _user_id: string }
+        Returns: {
+          co_raters: number
+          score: number
+          tmdb_id: string
+        }[]
+      }
       match_movie_embeddings: {
         Args: {
           exclude_id?: string
