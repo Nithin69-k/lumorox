@@ -1,7 +1,10 @@
-import { Link, useRouterState } from "@tanstack/react-router";
-import { Film, Search, Heart, Sparkles, Smile, Sun, Moon, Wand2 } from "lucide-react";
+import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
+import { Film, Search, Heart, Sparkles, Smile, Sun, Moon, Wand2, LogIn, LogOut, User as UserIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/use-auth";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const links = [
   { to: "/", label: "Home", icon: Film },
@@ -16,6 +19,16 @@ export function Navbar() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [scrolled, setScrolled] = useState(false);
   const [light, setLight] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const { user, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    setMenuOpen(false);
+    toast.success("Signed out");
+    navigate({ to: "/" });
+  };
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -90,6 +103,39 @@ export function Navbar() {
           >
             {light ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
           </button>
+          {isAuthenticated ? (
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setMenuOpen((v) => !v)}
+                aria-label="Account"
+                className="grid h-9 w-9 place-items-center rounded-full brand-gradient text-white text-xs font-semibold uppercase"
+              >
+                {(user?.email || "?").slice(0, 1)}
+              </button>
+              {menuOpen && (
+                <div className="absolute right-0 top-11 w-56 rounded-lg border border-border bg-popover p-2 shadow-lg">
+                  <div className="border-b border-border px-2 py-2 text-xs text-muted-foreground">
+                    <UserIcon className="mr-1 inline h-3 w-3" />
+                    {user?.email}
+                  </div>
+                  <button
+                    onClick={handleSignOut}
+                    className="mt-1 flex w-full items-center gap-2 rounded-md px-2 py-2 text-sm hover:bg-accent"
+                  >
+                    <LogOut className="h-4 w-4" /> Sign out
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <Link
+              to="/auth"
+              className="hidden items-center gap-1.5 rounded-full brand-gradient px-3 py-1.5 text-xs font-semibold text-white sm:inline-flex"
+            >
+              <LogIn className="h-3.5 w-3.5" /> Sign in
+            </Link>
+          )}
         </div>
       </div>
 
