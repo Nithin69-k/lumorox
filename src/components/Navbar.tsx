@@ -103,6 +103,39 @@ export function Navbar() {
           >
             {light ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
           </button>
+          {isAuthenticated ? (
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setMenuOpen((v) => !v)}
+                aria-label="Account"
+                className="grid h-9 w-9 place-items-center rounded-full brand-gradient text-white text-xs font-semibold uppercase"
+              >
+                {(user?.email || "?").slice(0, 1)}
+              </button>
+              {menuOpen && (
+                <div className="absolute right-0 top-11 w-56 rounded-lg border border-border bg-popover p-2 shadow-lg">
+                  <div className="border-b border-border px-2 py-2 text-xs text-muted-foreground">
+                    <UserIcon className="mr-1 inline h-3 w-3" />
+                    {user?.email}
+                  </div>
+                  <button
+                    onClick={handleSignOut}
+                    className="mt-1 flex w-full items-center gap-2 rounded-md px-2 py-2 text-sm hover:bg-accent"
+                  >
+                    <LogOut className="h-4 w-4" /> Sign out
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <Link
+              to="/auth"
+              className="hidden items-center gap-1.5 rounded-full brand-gradient px-3 py-1.5 text-xs font-semibold text-white sm:inline-flex"
+            >
+              <LogIn className="h-3.5 w-3.5" /> Sign in
+            </Link>
+          )}
         </div>
       </div>
 
