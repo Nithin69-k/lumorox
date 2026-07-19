@@ -1,10 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Sparkles, BarChart3 } from "lucide-react";
+import { Sparkles, BarChart3, Users } from "lucide-react";
 import { MovieCard } from "@/components/MovieCard";
 import { MovieGridSkeleton } from "@/components/MovieCardSkeleton";
 import { useUserStore } from "@/store/user";
 import { getPersonalizedRecommendations } from "@/lib/tmdb.functions";
+import { getCollaborativeRecommendations } from "@/lib/user-data.functions";
+import { useAuth } from "@/hooks/use-auth";
+import { useLibrarySync } from "@/hooks/use-library-sync";
 
 export const Route = createFileRoute("/recommendations")({
   head: () => ({
@@ -24,12 +27,21 @@ function RecPage() {
   const watchlist = useUserStore((s) => s.watchlist);
   const dislikes = useUserStore((s) => s.dislikes);
   const ratings = useUserStore((s) => s.ratings);
+  const { isAuthenticated } = useAuth();
+  useLibrarySync();
 
   const highlyRatedCount = Object.values(ratings).filter((r) => r >= 7).length;
   const seedCount = new Set([
     ...likes,
     ...Object.entries(ratings).filter(([, r]) => r >= 7).map(([id]) => id),
   ]).size;
+
+  const { data: collab = [], isFetching: collabLoading } = useQuery({
+    queryKey: ["recs", "collab", isAuthenticated],
+    queryFn: () => getCollaborativeRecommendations({ data: { limit: 12 } }),
+    enabled: isAuthenticated,
+    staleTime: 5 * 60_000,
+  });
 
   const { data: recs = [], isFetching, isSuccess } = useQuery({
     queryKey: ["recs", "personalized", likes.join(","), dislikes.join(","), watchlist.join(","), JSON.stringify(ratings)],
