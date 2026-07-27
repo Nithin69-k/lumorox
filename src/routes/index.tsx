@@ -95,6 +95,14 @@ function HomePage() {
   );
 }
 
+function NowPlayingRow() {
+  const { data } = useSuspenseQuery(nowPlayingOpts);
+  return <MovieRow title="In Cinemas Now" movies={data} />;
+}
+function LatestRow() {
+  const { data } = useSuspenseQuery(latestOpts);
+  return <MovieRow title="Just Released" movies={data} />;
+}
 function PopularRow() {
   const { data } = useSuspenseQuery(popularOpts);
   return <MovieRow title="Popular This Week" movies={data} />;
@@ -105,7 +113,7 @@ function TopRatedRow() {
 }
 function UpcomingRow() {
   const { data } = useSuspenseQuery(upcomingOpts);
-  return <MovieRow title="Recent & Upcoming" movies={data} />;
+  return <MovieRow title="Coming Soon" movies={data} />;
 }
 function GenreRow({ genre, title }: { genre: string; title?: string }) {
   const { data } = useSuspenseQuery(genreOpts(genre));
