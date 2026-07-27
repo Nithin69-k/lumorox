@@ -116,9 +116,22 @@ export const syncLibrary = createServerFn({ method: "POST" })
       watchlist: z.array(z.string()),
     }).parse(d))
   .handler(async ({ data, context }) => {
-    const ratingRows = Object.entries(data.ratings).map(([tmdb_id, rating]) => ({
-      user_id: context.userId, tmdb_id, rating, updated_at: new Date().toISOString(),
-    }));
+    // Conflict rule: the server row is authoritative. Only push local ratings
+    // for movies that have no server row yet, so a stale device can't clobber
+    // a newer rating made elsewhere. Watchlist is additive (union).
+    const { data: existing } = await context.supabase
+      .from("user_ratings" as never)
+      .select("tmdb_id")
+      .eq("user_id", context.userId);
+    const known = new Set(
+      ((existing as { tmdb_id: string }[] | null) ?? []).map((r) => r.tmdb_id),
+    );
+
+    const ratingRows = Object.entries(data.ratings)
+      .filter(([tmdb_id]) => !known.has(tmdb_id))
+      .map(([tmdb_id, rating]) => ({
+        user_id: context.userId, tmdb_id, rating, updated_at: new Date().toISOString(),
+      }));
     const watchRows = data.watchlist.map((tmdb_id) => ({ user_id: context.userId, tmdb_id }));
     if (ratingRows.length) {
       const { error } = await context.supabase
@@ -129,11 +142,12 @@ export const syncLibrary = createServerFn({ method: "POST" })
     if (watchRows.length) {
       const { error } = await context.supabase
         .from("user_watchlist" as never)
-        .upsert(watchRows as never, { onConflict: "user_id,tmdb_id" });
+        .upsert(watchRows as never, { onConflict: "user_id,tmdb_id", ignoreDuplicates: true });
       if (error) throw error;
     }
     return { ok: true, ratings: ratingRows.length, watchlist: watchRows.length };
   });
+
 
 // Collaborative filtering recommendations
 export interface CollabRec {
