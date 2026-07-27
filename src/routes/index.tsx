@@ -8,14 +8,20 @@ import { GENRES } from "@/data/genres";
 import { motion } from "framer-motion";
 import {
   getTrending, getPopular, getTopRated, getUpcoming, getByGenre,
+  getNowPlaying, getLatestReleases,
 } from "@/lib/tmdb.functions";
 
+// Auto-refresh cadence for catalogue data (15 minutes)
+const REFRESH_MS = 15 * 60_000;
+const live = { staleTime: REFRESH_MS, refetchInterval: REFRESH_MS, refetchOnWindowFocus: true } as const;
 
-const trendingOpts = queryOptions({ queryKey: ["tmdb", "trending"], queryFn: () => getTrending(), staleTime: 5 * 60_000 });
-const popularOpts = queryOptions({ queryKey: ["tmdb", "popular"], queryFn: () => getPopular(), staleTime: 5 * 60_000 });
-const topRatedOpts = queryOptions({ queryKey: ["tmdb", "topRated"], queryFn: () => getTopRated(), staleTime: 10 * 60_000 });
-const upcomingOpts = queryOptions({ queryKey: ["tmdb", "upcoming"], queryFn: () => getUpcoming(), staleTime: 10 * 60_000 });
-const genreOpts = (g: string) => queryOptions({ queryKey: ["tmdb", "genre", g], queryFn: () => getByGenre({ data: { genre: g } }), staleTime: 10 * 60_000 });
+const trendingOpts = queryOptions({ queryKey: ["tmdb", "trending"], queryFn: () => getTrending(), ...live });
+const nowPlayingOpts = queryOptions({ queryKey: ["tmdb", "nowPlaying"], queryFn: () => getNowPlaying(), ...live });
+const latestOpts = queryOptions({ queryKey: ["tmdb", "latest"], queryFn: () => getLatestReleases(), ...live });
+const popularOpts = queryOptions({ queryKey: ["tmdb", "popular"], queryFn: () => getPopular(), ...live });
+const topRatedOpts = queryOptions({ queryKey: ["tmdb", "topRated"], queryFn: () => getTopRated(), ...live });
+const upcomingOpts = queryOptions({ queryKey: ["tmdb", "upcoming"], queryFn: () => getUpcoming(), ...live });
+const genreOpts = (g: string) => queryOptions({ queryKey: ["tmdb", "genre", g], queryFn: () => getByGenre({ data: { genre: g } }), ...live });
 
 export const Route = createFileRoute("/")({
   head: () => ({
