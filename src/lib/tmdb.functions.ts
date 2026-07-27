@@ -26,16 +26,18 @@ interface CacheEntry { expires: number; data: unknown }
 const CACHE = new Map<string, CacheEntry>();
 const MAX_ENTRIES = 500;
 
-// TTLs (ms) tuned per endpoint volatility
-const TTL_DEFAULT = 10 * 60_000;
+// TTLs (ms) tuned per endpoint volatility. Kept short for "live" catalogue
+// endpoints so newly released titles surface quickly; long for static details.
+const TTL_DEFAULT = 5 * 60_000;
 const TTL_BY_PREFIX: Array<[string, number]> = [
-  ["/trending", 30 * 60_000],
-  ["/movie/popular", 60 * 60_000],
-  ["/movie/top_rated", 6 * 60 * 60_000],
-  ["/movie/upcoming", 60 * 60_000],
-  ["/discover/movie", 30 * 60_000],
-  ["/search/movie", 10 * 60_000],
-  ["/movie/", 6 * 60 * 60_000], // details + recommendations
+  ["/trending", 10 * 60_000],
+  ["/movie/now_playing", 10 * 60_000],
+  ["/movie/popular", 10 * 60_000],
+  ["/movie/top_rated", 60 * 60_000],
+  ["/movie/upcoming", 15 * 60_000],
+  ["/discover/movie", 10 * 60_000],
+  ["/search/movie", 5 * 60_000],
+  ["/movie/", 6 * 60 * 60_000], // details + recommendations (immutable-ish)
 ];
 function ttlFor(path: string): number {
   for (const [p, t] of TTL_BY_PREFIX) if (path.startsWith(p)) return t;
