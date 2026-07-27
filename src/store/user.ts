@@ -119,8 +119,8 @@ export const useUserStore = create<State>()(
       },
       inWatchlist: (id) => get().watchlist.includes(id),
       isLiked: (id) => get().likes.includes(id),
-      isDisliked: (id) => get().isDisliked ? get().dislikes.includes(id) : get().dislikes.includes(id),
-      pendingFor: undefined,
+      isDisliked: (id) => get().dislikes.includes(id),
+
     }) as State,
     {
       name: "lumorox-user-v1",
