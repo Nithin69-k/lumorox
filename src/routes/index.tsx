@@ -8,14 +8,20 @@ import { GENRES } from "@/data/genres";
 import { motion } from "framer-motion";
 import {
   getTrending, getPopular, getTopRated, getUpcoming, getByGenre,
+  getNowPlaying, getLatestReleases,
 } from "@/lib/tmdb.functions";
 
+// Auto-refresh cadence for catalogue data (15 minutes)
+const REFRESH_MS = 15 * 60_000;
+const live = { staleTime: REFRESH_MS, refetchInterval: REFRESH_MS, refetchOnWindowFocus: true } as const;
 
-const trendingOpts = queryOptions({ queryKey: ["tmdb", "trending"], queryFn: () => getTrending(), staleTime: 5 * 60_000 });
-const popularOpts = queryOptions({ queryKey: ["tmdb", "popular"], queryFn: () => getPopular(), staleTime: 5 * 60_000 });
-const topRatedOpts = queryOptions({ queryKey: ["tmdb", "topRated"], queryFn: () => getTopRated(), staleTime: 10 * 60_000 });
-const upcomingOpts = queryOptions({ queryKey: ["tmdb", "upcoming"], queryFn: () => getUpcoming(), staleTime: 10 * 60_000 });
-const genreOpts = (g: string) => queryOptions({ queryKey: ["tmdb", "genre", g], queryFn: () => getByGenre({ data: { genre: g } }), staleTime: 10 * 60_000 });
+const trendingOpts = queryOptions({ queryKey: ["tmdb", "trending"], queryFn: () => getTrending(), ...live });
+const nowPlayingOpts = queryOptions({ queryKey: ["tmdb", "nowPlaying"], queryFn: () => getNowPlaying(), ...live });
+const latestOpts = queryOptions({ queryKey: ["tmdb", "latest"], queryFn: () => getLatestReleases(), ...live });
+const popularOpts = queryOptions({ queryKey: ["tmdb", "popular"], queryFn: () => getPopular(), ...live });
+const topRatedOpts = queryOptions({ queryKey: ["tmdb", "topRated"], queryFn: () => getTopRated(), ...live });
+const upcomingOpts = queryOptions({ queryKey: ["tmdb", "upcoming"], queryFn: () => getUpcoming(), ...live });
+const genreOpts = (g: string) => queryOptions({ queryKey: ["tmdb", "genre", g], queryFn: () => getByGenre({ data: { genre: g } }), ...live });
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -30,6 +36,8 @@ export const Route = createFileRoute("/")({
   }),
   loader: ({ context }) => {
     context.queryClient.ensureQueryData(trendingOpts);
+    context.queryClient.prefetchQuery(nowPlayingOpts);
+    context.queryClient.prefetchQuery(latestOpts);
     context.queryClient.prefetchQuery(popularOpts);
     context.queryClient.prefetchQuery(topRatedOpts);
     context.queryClient.prefetchQuery(upcomingOpts);
@@ -47,9 +55,11 @@ function HomePage() {
 
       <div className="space-y-2 pb-10">
         <MovieRow title="Trending Now" movies={trendingList} />
+        <Suspense fallback={<MovieRowSkeleton title="In Cinemas Now" />}><NowPlayingRow /></Suspense>
+        <Suspense fallback={<MovieRowSkeleton title="Just Released" />}><LatestRow /></Suspense>
         <Suspense fallback={<MovieRowSkeleton title="Popular This Week" />}><PopularRow /></Suspense>
         <Suspense fallback={<MovieRowSkeleton title="Top Rated" />}><TopRatedRow /></Suspense>
-        <Suspense fallback={<MovieRowSkeleton title="Recent & Upcoming" />}><UpcomingRow /></Suspense>
+        <Suspense fallback={<MovieRowSkeleton title="Coming Soon" />}><UpcomingRow /></Suspense>
         <Suspense fallback={<MovieRowSkeleton title="Action & Adventure" />}><GenreRow genre="Action" title="Action & Adventure" /></Suspense>
         <Suspense fallback={<MovieRowSkeleton title="Mind-Bending Sci-Fi" />}><GenreRow genre="Science Fiction" title="Mind-Bending Sci-Fi" /></Suspense>
         <Suspense fallback={<MovieRowSkeleton title="Drama Spotlight" />}><GenreRow genre="Drama" title="Drama Spotlight" /></Suspense>
@@ -85,6 +95,14 @@ function HomePage() {
   );
 }
 
+function NowPlayingRow() {
+  const { data } = useSuspenseQuery(nowPlayingOpts);
+  return <MovieRow title="In Cinemas Now" movies={data} />;
+}
+function LatestRow() {
+  const { data } = useSuspenseQuery(latestOpts);
+  return <MovieRow title="Just Released" movies={data} />;
+}
 function PopularRow() {
   const { data } = useSuspenseQuery(popularOpts);
   return <MovieRow title="Popular This Week" movies={data} />;
@@ -95,7 +113,7 @@ function TopRatedRow() {
 }
 function UpcomingRow() {
   const { data } = useSuspenseQuery(upcomingOpts);
-  return <MovieRow title="Recent & Upcoming" movies={data} />;
+  return <MovieRow title="Coming Soon" movies={data} />;
 }
 function GenreRow({ genre, title }: { genre: string; title?: string }) {
   const { data } = useSuspenseQuery(genreOpts(genre));

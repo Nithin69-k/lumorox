@@ -26,16 +26,18 @@ interface CacheEntry { expires: number; data: unknown }
 const CACHE = new Map<string, CacheEntry>();
 const MAX_ENTRIES = 500;
 
-// TTLs (ms) tuned per endpoint volatility
-const TTL_DEFAULT = 10 * 60_000;
+// TTLs (ms) tuned per endpoint volatility. Kept short for "live" catalogue
+// endpoints so newly released titles surface quickly; long for static details.
+const TTL_DEFAULT = 5 * 60_000;
 const TTL_BY_PREFIX: Array<[string, number]> = [
-  ["/trending", 30 * 60_000],
-  ["/movie/popular", 60 * 60_000],
-  ["/movie/top_rated", 6 * 60 * 60_000],
-  ["/movie/upcoming", 60 * 60_000],
-  ["/discover/movie", 30 * 60_000],
-  ["/search/movie", 10 * 60_000],
-  ["/movie/", 6 * 60 * 60_000], // details + recommendations
+  ["/trending", 10 * 60_000],
+  ["/movie/now_playing", 10 * 60_000],
+  ["/movie/popular", 10 * 60_000],
+  ["/movie/top_rated", 60 * 60_000],
+  ["/movie/upcoming", 15 * 60_000],
+  ["/discover/movie", 10 * 60_000],
+  ["/search/movie", 5 * 60_000],
+  ["/movie/", 6 * 60 * 60_000], // details + recommendations (immutable-ish)
 ];
 function ttlFor(path: string): number {
   for (const [p, t] of TTL_BY_PREFIX) if (path.startsWith(p)) return t;
@@ -144,6 +146,29 @@ export const getUpcoming = createServerFn({ method: "GET" }).handler(async () =>
   const data = await tmdb<{ results: TmdbListItem[] }>("/movie/upcoming");
   return normalizeList(data.results);
 });
+
+// Currently in cinemas
+export const getNowPlaying = createServerFn({ method: "GET" }).handler(async () => {
+  const data = await tmdb<{ results: TmdbListItem[] }>("/movie/now_playing");
+  return normalizeList(data.results);
+});
+
+// Freshly released titles (last 60 days), newest first
+export const getLatestReleases = createServerFn({ method: "GET" }).handler(async () => {
+  const today = new Date();
+  const from = new Date(today.getTime() - 60 * 24 * 60 * 60_000);
+  const iso = (d: Date) => d.toISOString().slice(0, 10);
+  const data = await tmdb<{ results: TmdbListItem[] }>("/discover/movie", {
+    sort_by: "primary_release_date.desc",
+    "primary_release_date.gte": iso(from),
+    "primary_release_date.lte": iso(today),
+    "vote_count.gte": 20,
+    include_adult: "false",
+  });
+  return normalizeList(data.results);
+});
+
+
 
 export const getByGenre = createServerFn({ method: "GET" })
   .inputValidator((d: { genre: string }) => z.object({ genre: z.string() }).parse(d))
