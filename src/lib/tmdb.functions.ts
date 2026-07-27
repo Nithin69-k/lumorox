@@ -147,6 +147,29 @@ export const getUpcoming = createServerFn({ method: "GET" }).handler(async () =>
   return normalizeList(data.results);
 });
 
+// Currently in cinemas
+export const getNowPlaying = createServerFn({ method: "GET" }).handler(async () => {
+  const data = await tmdb<{ results: TmdbListItem[] }>("/movie/now_playing");
+  return normalizeList(data.results);
+});
+
+// Freshly released titles (last 60 days), newest first
+export const getLatestReleases = createServerFn({ method: "GET" }).handler(async () => {
+  const today = new Date();
+  const from = new Date(today.getTime() - 60 * 24 * 60 * 60_000);
+  const iso = (d: Date) => d.toISOString().slice(0, 10);
+  const data = await tmdb<{ results: TmdbListItem[] }>("/discover/movie", {
+    sort_by: "primary_release_date.desc",
+    "primary_release_date.gte": iso(from),
+    "primary_release_date.lte": iso(today),
+    "vote_count.gte": 20,
+    include_adult: "false",
+  });
+  return normalizeList(data.results);
+});
+
+
+
 export const getByGenre = createServerFn({ method: "GET" })
   .inputValidator((d: { genre: string }) => z.object({ genre: z.string() }).parse(d))
   .handler(async ({ data }) => {
