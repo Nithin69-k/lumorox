@@ -36,6 +36,8 @@ export const Route = createFileRoute("/")({
   }),
   loader: ({ context }) => {
     context.queryClient.ensureQueryData(trendingOpts);
+    context.queryClient.prefetchQuery(nowPlayingOpts);
+    context.queryClient.prefetchQuery(latestOpts);
     context.queryClient.prefetchQuery(popularOpts);
     context.queryClient.prefetchQuery(topRatedOpts);
     context.queryClient.prefetchQuery(upcomingOpts);
@@ -53,9 +55,11 @@ function HomePage() {
 
       <div className="space-y-2 pb-10">
         <MovieRow title="Trending Now" movies={trendingList} />
+        <Suspense fallback={<MovieRowSkeleton title="In Cinemas Now" />}><NowPlayingRow /></Suspense>
+        <Suspense fallback={<MovieRowSkeleton title="Just Released" />}><LatestRow /></Suspense>
         <Suspense fallback={<MovieRowSkeleton title="Popular This Week" />}><PopularRow /></Suspense>
         <Suspense fallback={<MovieRowSkeleton title="Top Rated" />}><TopRatedRow /></Suspense>
-        <Suspense fallback={<MovieRowSkeleton title="Recent & Upcoming" />}><UpcomingRow /></Suspense>
+        <Suspense fallback={<MovieRowSkeleton title="Coming Soon" />}><UpcomingRow /></Suspense>
         <Suspense fallback={<MovieRowSkeleton title="Action & Adventure" />}><GenreRow genre="Action" title="Action & Adventure" /></Suspense>
         <Suspense fallback={<MovieRowSkeleton title="Mind-Bending Sci-Fi" />}><GenreRow genre="Science Fiction" title="Mind-Bending Sci-Fi" /></Suspense>
         <Suspense fallback={<MovieRowSkeleton title="Drama Spotlight" />}><GenreRow genre="Drama" title="Drama Spotlight" /></Suspense>
