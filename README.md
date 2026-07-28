@@ -1,408 +1,74 @@
-<div align="center">
+# LumoroX AI
 
-# 🎬 LumoroX
+Cinematic AI movie discovery: TMDB-powered catalogue, hybrid recommendations,
+semantic + natural-language search, watchlists and mood discovery.
 
-### AI-Powered Movie Discovery Platform
+Stack: TanStack Start (v1) · React 19 · Vite 7 · Tailwind CSS v4 · shadcn/ui ·
+TanStack Query · Zustand · Zod · Supabase.
 
-Discover movies, explore trending content, create your watchlist, search instantly, and get intelligent AI-powered movie recommendations—all in one beautifully designed experience.
-
-### 🌐 Live Demo
-https://lumorox.lovable.app
-
----
-
-![GitHub stars](https://img.shields.io/github/stars/Nithin69-k/lumorox?style=for-the-badge)
-![GitHub forks](https://img.shields.io/github/forks/Nithin69-k/lumorox?style=for-the-badge)
-![GitHub repo size](https://img.shields.io/github/repo-size/Nithin69-k/lumorox?style=for-the-badge)
-![License](https://img.shields.io/github/license/Nithin69-k/lumorox?style=for-the-badge)
-
-</div>
-
----
-
-# 🎥 Overview
-
-LumoroX is a modern AI-powered movie discovery platform inspired by IMDb, Letterboxd, Netflix, and AI assistants.
-
-It combines powerful movie search, personalized recommendations, mood-based discovery, intelligent AI interactions, and a cinematic UI into one seamless web application.
-
-Built with modern frontend technologies and designed using glassmorphism, gradients, smooth animations, and responsive layouts, LumoroX delivers an immersive experience for movie lovers.
-
----
-
-# ✨ Features
-
-## 🎬 Movie Discovery
-
-- Browse thousands of movies
-- Explore trending titles
-- Featured hero banner
-- Beautiful movie posters
-- High-quality backdrops
-- Popular releases
-- Upcoming movies
-- Top-rated collections
-- Similar movie suggestions
-
----
-
-## 🔍 Smart Search
-
-- Instant movie search
-- Fast autocomplete
-- Search by movie title
-- Responsive search experience
-- Dynamic filtering
-
----
-
-## 🤖 Ask AI
-
-Interact with an AI movie assistant that can:
-
-- Recommend movies
-- Suggest hidden gems
-- Answer movie-related questions
-- Recommend movies based on mood
-- Find movies similar to another film
-- Help discover new genres
-
----
-
-## ❤️ Personalized Experience
-
-- Personal Watchlist
-- Save favorite movies
-- Quick access to saved content
-- Personalized recommendations
-- Recently viewed content
-
----
-
-## 😊 Mood Based Recommendations
-
-Discover movies based on your mood.
-
-Examples:
-
-- Happy
-- Romantic
-- Sad
-- Action
-- Thriller
-- Horror
-- Sci-Fi
-- Comedy
-- Family
-- Adventure
-
----
-
-## 🎞 Movie Details
-
-Detailed movie pages include:
-
-- Poster
-- Backdrop
-- Overview
-- Rating
-- Genres
-- Release year
-- Runtime
-- Trailer
-- Cast
-- Similar movies
-
----
-
-## ⭐ Ratings
-
-- IMDb style ratings
-- User friendly display
-- Easy-to-read movie information
-
----
-
-## 🎥 Trailer Support
-
-- Watch trailers instantly
-- One-click trailer access
-- Embedded video experience
-
----
-
-## 🌙 Modern UI
-
-- Glassmorphism
-- Dark theme
-- Gradient backgrounds
-- Smooth animations
-- Responsive layout
-- Premium typography
-- Interactive cards
-- Hover effects
-
----
-
-## 📱 Responsive Design
-
-Fully optimized for:
-
-- Desktop
-- Laptop
-- Tablet
-- Mobile devices
-
----
-
-# 🖼 Screenshots
-
-## 🏠 Home Page
-
-<img src="./screenshots/home.png" width="100%">
-
----
-
-## 🎬 Featured Movie Hero
-
-<img src="./screenshots/featured.png" width="100%">
-
----
-
-## 🔍 Search Experience
-
-<img src="./screenshots/search.png" width="100%">
-
----
-
-## 🤖 Ask AI
-
-<img src="./screenshots/ask-ai.png" width="100%">
-
----
-
-## ❤️ Watchlist
-
-<img src="./screenshots/watchlist.png" width="100%">
-
----
-
-## 😊 Mood Recommendations
-
-<img src="./screenshots/mood.png" width="100%">
-
----
-
-# 🚀 Live Demo
-
-## Visit Here
-
-https://lumorox.lovable.app
-
----
-
-# 🛠 Tech Stack
-
-### Frontend
-
-- React
-- TypeScript
-- Vite
-
-### Styling
-
-- Tailwind CSS
-- CSS Animations
-- Responsive Design
-- Glassmorphism UI
-
-### APIs
-
-- TMDB API
-- AI Integration
-
-### Deployment
-
-- Vercel
-- Lovable
-
----
-
-# 📂 Project Structure
-
-```
-lumorox/
-│
-├── public/
-│
-├── src/
-│   ├── components/
-│   ├── pages/
-│   ├── hooks/
-│   ├── services/
-│   ├── assets/
-│   ├── utils/
-│   └── App.tsx
-│
-├── screenshots/
-│
-├── package.json
-├── vite.config.ts
-└── README.md
-```
-
----
-
-# ⚡ Installation
-
-Clone the repository
+## Local development
 
 ```bash
-git clone https://github.com/Nithin69-k/lumorox.git
+npm install          # or bun install
+cp .env.example .env # fill in the values
+npm run dev          # http://localhost:8080
 ```
 
-Go inside project
+Useful scripts:
+
+| Script | Purpose |
+| --- | --- |
+| `npm run dev` | Dev server with HMR |
+| `npm run build` | Production build (SSR + client + server bundle) |
+| `npm run preview` | Preview the production build locally |
+| `npm run lint` | ESLint |
+
+## Environment variables
+
+See `.env.example`. Two classes:
+
+- `VITE_*` — public, inlined into the browser bundle.
+- everything else — server-only, read **inside** server function handlers
+  (`process.env.X` at module scope is `undefined` on serverless runtimes).
+
+Required for a fully working deployment: `VITE_SUPABASE_URL`,
+`VITE_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`,
+`TMDB_API_KEY`. Optional: `SUPABASE_SERVICE_ROLE_KEY`, `LOVABLE_API_KEY`,
+`OPENAI_API_KEY` (AI search), `SITE_URL`.
+
+## Deploying to Vercel
+
+The build uses Nitro, which auto-detects Vercel and emits the Build Output API
+v3 bundle in `.vercel/output`. `vercel.json` pins that wiring, so no framework
+preset is needed.
+
+1. Import the repository in Vercel (Framework Preset: **Other** — `vercel.json`
+   already sets build/install/output).
+2. Add every variable from `.env.example` under **Settings → Environment
+   Variables** for Production *and* Preview. `VITE_*` values must exist at
+   **build** time; server-only values are read at request time.
+3. Deploy. Routes are server-rendered, and `/sitemap.xml` and `/robots.txt` are
+   generated per request from the deployment host (or `SITE_URL` if set).
+4. Add your custom domain and set `SITE_URL` to it so canonical SEO URLs match.
+
+Notes:
+
+- Node.js 20+ is required (Vercel default is fine).
+- Supabase must allow your Vercel domain in **Auth → URL configuration**
+  (Site URL + redirect URLs) for Google/email sign-in to work.
+- TMDB responses are cached in-memory per warm instance with per-endpoint TTLs;
+  no extra cache infrastructure is needed.
+
+### CLI deploy
 
 ```bash
-cd lumorox
+npm i -g vercel
+vercel link
+vercel env pull .env.local
+vercel --prod
 ```
 
-Install dependencies
+## Other targets
 
-```bash
-npm install
-```
-
-Run development server
-
-```bash
-npm run dev
-```
-
-Build production
-
-```bash
-npm run build
-```
-
-Preview build
-
-```bash
-npm run preview
-```
-
----
-
-# 🔑 Environment Variables
-
-Create a `.env` file
-
-```env
-VITE_TMDB_API_KEY=YOUR_TMDB_API_KEY
-
-VITE_OPENAI_API_KEY=YOUR_API_KEY
-```
-
----
-
-# 🌟 Upcoming Features
-
-- User Authentication
-- Reviews & Ratings
-- AI Chat Memory
-- Streaming Platform Availability
-- Actor Profiles
-- Director Pages
-- Collections
-- Awards Information
-- TV Shows
-- Episode Tracking
-- Multi-language Support
-- Dark/Light Theme
-- Recommendation Engine Improvements
-- Social Sharing
-- Community Reviews
-- AI Watchlist Assistant
-- Personalized Dashboard
-- Movie Calendar
-- Notifications
-
----
-
-# 🎯 Performance
-
-✔ Fast Loading
-
-✔ Responsive Design
-
-✔ Optimized Images
-
-✔ Smooth Animations
-
-✔ Lazy Loading
-
-✔ Mobile Friendly
-
-✔ SEO Friendly
-
----
-
-# 🤝 Contributing
-
-Contributions are welcome!
-
-1. Fork the repository
-
-2. Create your feature branch
-
-```bash
-git checkout -b feature/NewFeature
-```
-
-3. Commit your changes
-
-```bash
-git commit -m "Added new feature"
-```
-
-4. Push
-
-```bash
-git push origin feature/NewFeature
-```
-
-5. Open a Pull Request
-
----
-
-# 📄 License
-
-This project is licensed under the MIT License.
-
----
-
-# 👨‍💻 Developer
-
-## Nithin K
-
-Computer Science Engineer
-
-AI • Machine Learning • Full Stack Development • Android • Generative AI
-
-### GitHub
-
-https://github.com/Nithin69-k
-
-### LinkedIn
-
-https://www.linkedin.com/in/nithin-k-2003/
-
----
-
-<div align="center">
-
-## ⭐ If you like this project, don't forget to Star the repository!
-
-Made with ❤️ by Nithin K
-
-</div>
+The same build runs on any Nitro-supported platform. Set `NITRO_PRESET`
+(e.g. `node-server`, `netlify`, `cloudflare-module`) before `npm run build`.
