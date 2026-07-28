@@ -1,7 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
 import type {} from "@tanstack/react-start";
 
-const BASE_URL = "https://ciniversx.lovable.app";
+// Resolved per-request so the same build works on Lovable, Vercel or a custom domain.
+function baseUrl(request: Request): string {
+  const explicit = process.env.SITE_URL;
+  if (explicit) return explicit.replace(/\/$/, "");
+  const vercel = process.env.VERCEL_PROJECT_PRODUCTION_URL || process.env.VERCEL_URL;
+  if (vercel) return `https://${vercel}`;
+  return new URL(request.url).origin;
+}
 
 interface SitemapEntry {
   path: string;
