@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { MoviePoster } from "@/components/MoviePoster";
 import { MovieRow } from "@/components/MovieRow";
 import { useUserStore } from "@/store/user";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { getMovieDetails, getSimilar } from "@/lib/tmdb.functions";
 import { getSemanticSimilar } from "@/lib/semantic.functions";
@@ -22,7 +22,14 @@ const similarOpts = (id: string) => queryOptions({
 });
 
 export const Route = createFileRoute("/movie/$id")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    play:
+      search.play === true || search.play === "1" || search.play === "true"
+        ? true
+        : undefined,
+  }),
   loader: async ({ params, context }) => {
+
     const movie = await context.queryClient.ensureQueryData(detailsOpts(params.id));
     if (!movie) throw notFound();
     context.queryClient.prefetchQuery(similarOpts(params.id));
@@ -66,7 +73,8 @@ function MoviePage() {
     queryFn: () => getSemanticSimilar({ data: { id, limit: 12 } }),
     staleTime: 60 * 60_000,
   });
-  const [playing, setPlaying] = useState(false);
+  const { play } = Route.useSearch();
+  const [playing, setPlaying] = useState(Boolean(play));
   const liked = useUserStore((s) => s.likes.includes(id));
   const disliked = useUserStore((s) => s.dislikes.includes(id));
   const inList = useUserStore((s) => s.watchlist.includes(id));
@@ -75,6 +83,21 @@ function MoviePage() {
   const toggleDislike = useUserStore((s) => s.toggleDislike);
   const toggleWatchlist = useUserStore((s) => s.toggleWatchlist);
   const rate = useUserStore((s) => s.rate);
+
+  useEffect(() => {
+    if (!playing) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setPlaying(false);
+    };
+    document.addEventListener("keydown", onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prev;
+    };
+  }, [playing]);
+
 
   if (!movie) return null;
 
