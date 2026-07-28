@@ -15,6 +15,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as MetricsRouteImport } from './routes/metrics'
 import { Route as MoodRouteImport } from './routes/mood'
 import { Route as RecommendationsRouteImport } from './routes/recommendations'
+import { Route as RobotsDottxtRouteImport } from './routes/robots[.]txt'
 import { Route as SearchRouteImport } from './routes/search'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as WatchlistRouteImport } from './routes/watchlist'
@@ -50,6 +51,11 @@ const RecommendationsRoute = RecommendationsRouteImport.update({
   path: '/recommendations',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RobotsDottxtRoute = RobotsDottxtRouteImport.update({
+  id: '/robots.txt',
+  path: '/robots.txt',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SearchRoute = SearchRouteImport.update({
   id: '/search',
   path: '/search',
@@ -78,6 +84,7 @@ export interface FileRoutesByFullPath {
   '/metrics': typeof MetricsRoute
   '/mood': typeof MoodRoute
   '/recommendations': typeof RecommendationsRoute
+  '/robots.txt': typeof RobotsDottxtRoute
   '/search': typeof SearchRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/watchlist': typeof WatchlistRoute
@@ -90,6 +97,7 @@ export interface FileRoutesByTo {
   '/metrics': typeof MetricsRoute
   '/mood': typeof MoodRoute
   '/recommendations': typeof RecommendationsRoute
+  '/robots.txt': typeof RobotsDottxtRoute
   '/search': typeof SearchRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/watchlist': typeof WatchlistRoute
@@ -103,6 +111,7 @@ export interface FileRoutesById {
   '/metrics': typeof MetricsRoute
   '/mood': typeof MoodRoute
   '/recommendations': typeof RecommendationsRoute
+  '/robots.txt': typeof RobotsDottxtRoute
   '/search': typeof SearchRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/watchlist': typeof WatchlistRoute
@@ -117,6 +126,7 @@ export interface FileRouteTypes {
     | '/metrics'
     | '/mood'
     | '/recommendations'
+    | '/robots.txt'
     | '/search'
     | '/sitemap.xml'
     | '/watchlist'
@@ -129,6 +139,7 @@ export interface FileRouteTypes {
     | '/metrics'
     | '/mood'
     | '/recommendations'
+    | '/robots.txt'
     | '/search'
     | '/sitemap.xml'
     | '/watchlist'
@@ -141,6 +152,7 @@ export interface FileRouteTypes {
     | '/metrics'
     | '/mood'
     | '/recommendations'
+    | '/robots.txt'
     | '/search'
     | '/sitemap.xml'
     | '/watchlist'
@@ -154,6 +166,7 @@ export interface RootRouteChildren {
   MetricsRoute: typeof MetricsRoute
   MoodRoute: typeof MoodRoute
   RecommendationsRoute: typeof RecommendationsRoute
+  RobotsDottxtRoute: typeof RobotsDottxtRoute
   SearchRoute: typeof SearchRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   WatchlistRoute: typeof WatchlistRoute
@@ -204,6 +217,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RecommendationsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/robots.txt': {
+      id: '/robots.txt'
+      path: '/robots.txt'
+      fullPath: '/robots.txt'
+      preLoaderRoute: typeof RobotsDottxtRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/search': {
       id: '/search'
       path: '/search'
@@ -242,6 +262,7 @@ const rootRouteChildren: RootRouteChildren = {
   MetricsRoute: MetricsRoute,
   MoodRoute: MoodRoute,
   RecommendationsRoute: RecommendationsRoute,
+  RobotsDottxtRoute: RobotsDottxtRoute,
   SearchRoute: SearchRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   WatchlistRoute: WatchlistRoute,
