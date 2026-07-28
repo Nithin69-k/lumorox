@@ -1,4 +1,0 @@
-User-agent: *
-Allow: /
-
-Sitemap: https://ciniversx.lovable.app/sitemap.xml
