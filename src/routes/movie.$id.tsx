@@ -22,7 +22,14 @@ const similarOpts = (id: string) => queryOptions({
 });
 
 export const Route = createFileRoute("/movie/$id")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    play:
+      search.play === true || search.play === "1" || search.play === "true"
+        ? true
+        : undefined,
+  }),
   loader: async ({ params, context }) => {
+
     const movie = await context.queryClient.ensureQueryData(detailsOpts(params.id));
     if (!movie) throw notFound();
     context.queryClient.prefetchQuery(similarOpts(params.id));
