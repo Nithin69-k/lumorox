@@ -162,7 +162,8 @@ export const getCollaborativeRecommendations = createServerFn({ method: "POST" }
   .inputValidator((d: { limit?: number }) => z.object({ limit: z.number().optional() }).parse(d))
   .handler(async ({ data, context }): Promise<CollabRec[]> => {
     const limit = data.limit ?? 18;
-    const { data: rows, error } = await context.supabase.rpc(
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: rows, error } = await supabaseAdmin.rpc(
       "collaborative_recommendations" as never,
       { _user_id: context.userId, _limit: limit } as never,
     );
