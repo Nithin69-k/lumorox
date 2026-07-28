@@ -73,7 +73,8 @@ function MoviePage() {
     queryFn: () => getSemanticSimilar({ data: { id, limit: 12 } }),
     staleTime: 60 * 60_000,
   });
-  const [playing, setPlaying] = useState(false);
+  const { play } = Route.useSearch();
+  const [playing, setPlaying] = useState(Boolean(play));
   const liked = useUserStore((s) => s.likes.includes(id));
   const disliked = useUserStore((s) => s.dislikes.includes(id));
   const inList = useUserStore((s) => s.watchlist.includes(id));
@@ -82,6 +83,21 @@ function MoviePage() {
   const toggleDislike = useUserStore((s) => s.toggleDislike);
   const toggleWatchlist = useUserStore((s) => s.toggleWatchlist);
   const rate = useUserStore((s) => s.rate);
+
+  useEffect(() => {
+    if (!playing) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setPlaying(false);
+    };
+    document.addEventListener("keydown", onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prev;
+    };
+  }, [playing]);
+
 
   if (!movie) return null;
 
