@@ -74,6 +74,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "description", content: "Discover your next favorite film. AI-powered movie recommendations, mood matching, watchlists, and a curated cinematic library." },
       { name: "author", content: "LumoroX AI" },
       { name: "theme-color", content: "#0b0b0f" },
+      { name: "google-adsense-account", content: "ca-pub-8810843904982932" },
       { property: "og:site_name", content: "LumoroX AI" },
       { property: "og:title", content: "LumoroX AI — Cinematic Movie Recommendations" },
       { property: "og:description", content: "Discover your next favorite film. AI-powered movie recommendations, mood matching, watchlists, and a curated cinematic library." },
