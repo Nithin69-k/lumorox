@@ -1,0 +1,18 @@
+# LumoroX AI
+
+> AI-powered movie discovery: trending films, reviews, ratings, synopses, trailers, mood-based discovery and personalized recommendations.
+
+LumoroX AI helps people find what to watch next. It combines live TMDB catalogue data with a hybrid recommendation engine (content similarity + collaborative signals) and natural-language search so visitors can ask questions like "mind-bending sci-fi like Inception" and get explained recommendations.
+
+## Pages
+
+- [Home](/): Trending now, in cinemas, just released, top rated and coming-soon movies.
+- [Search](/search): Search movies by title, genre, cast, director or keyword.
+- [Ask AI](/ask): Natural-language movie search — describe a mood, plot or vibe and get matching films.
+- [Mood Discovery](/mood): Browse movies by mood (feel-good, tense, romantic, epic and more).
+- [Recommendations](/recommendations): Personalized picks with explanations for why each film was chosen.
+- [Movie details](/movie/1): Synopsis, cast, director, runtime, rating, trailer and similar movies for any film.
+
+## Optional
+
+- [Watchlist](/watchlist): Personal saved-movies list (requires a signed-in session to sync).
