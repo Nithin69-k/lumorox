@@ -24,9 +24,9 @@ export const Route = createFileRoute("/search")({
       { title: "Search Movies — LumoroX AI" },
       { name: "description", content: "Search and filter thousands of movies by genre, rating, and year via TMDB." },
       { property: "og:title", content: "Search Movies — LumoroX AI" },
-      { property: "og:url", content: "/search" },
+      { property: "og:url", content: "https://lumorox.lovable.app/search" },
     ],
-    links: [{ rel: "canonical", href: "/search" }],
+    links: [{ rel: "canonical", href: "https://lumorox.lovable.app/search" }],
   }),
   component: SearchPage,
 });

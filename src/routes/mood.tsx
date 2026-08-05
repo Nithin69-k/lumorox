@@ -13,9 +13,9 @@ export const Route = createFileRoute("/mood")({
       { title: "Mood Recommendations — LumoroX AI" },
       { name: "description", content: "Pick a mood and get instant cinematic recommendations curated for the feeling." },
       { property: "og:title", content: "Mood Recommendations — LumoroX AI" },
-      { property: "og:url", content: "/mood" },
+      { property: "og:url", content: "https://lumorox.lovable.app/mood" },
     ],
-    links: [{ rel: "canonical", href: "/mood" }],
+    links: [{ rel: "canonical", href: "https://lumorox.lovable.app/mood" }],
   }),
   component: MoodPage,
 });

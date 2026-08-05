@@ -49,10 +49,10 @@ export const Route = createFileRoute("/movie/$id")({
             { property: "og:title", content: `${loaderData.title} (${loaderData.year})` },
             { property: "og:description", content: loaderData.overview.slice(0, 200) },
             { property: "og:type", content: "video.movie" },
-            { property: "og:url", content: `/movie/${params.id}` },
+            { property: "og:url", content: `https://lumorox.lovable.app/movie/${params.id}` },
             ...(loaderData.posterUrl ? [{ property: "og:image" as const, content: loaderData.posterUrl }] : []),
           ],
-          links: [{ rel: "canonical", href: `/movie/${params.id}` }],
+          links: [{ rel: "canonical", href: `https://lumorox.lovable.app/movie/${params.id}` }],
         }
       : { meta: [{ title: "Movie — LumoroX AI" }] },
   component: MoviePage,
