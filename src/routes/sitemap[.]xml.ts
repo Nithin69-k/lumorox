@@ -7,8 +7,15 @@ function baseUrl(request: Request): string {
   if (explicit) return explicit.replace(/\/$/, "");
   const vercel = process.env.VERCEL_PROJECT_PRODUCTION_URL || process.env.VERCEL_URL;
   if (vercel) return `https://${vercel}`;
-  return new URL(request.url).origin;
+  try {
+    const origin = new URL(request.url).origin;
+    if (origin.startsWith("http")) return origin;
+  } catch {
+    /* fall through */
+  }
+  return "https://lumorox.lovable.app";
 }
+
 
 interface SitemapEntry {
   path: string;
