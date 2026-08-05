@@ -12,9 +12,9 @@ export const Route = createFileRoute("/watchlist")({
       { title: "My Watchlist — LumoroX AI" },
       { name: "description", content: "Movies you've saved to watch later, stored privately on your device." },
       { property: "og:title", content: "My Watchlist — LumoroX AI" },
-      { property: "og:url", content: "/watchlist" },
+      { property: "og:url", content: "https://lumorox.lovable.app/watchlist" },
     ],
-    links: [{ rel: "canonical", href: "/watchlist" }],
+    links: [{ rel: "canonical", href: "https://lumorox.lovable.app/watchlist" }],
   }),
   component: WatchlistPage,
 });

@@ -38,23 +38,94 @@ export const Route = createFileRoute("/movie/$id")({
       year: movie.year,
       overview: movie.overview,
       posterUrl: movie.posterUrl,
+      rating: movie.rating,
+      runtime: movie.runtime,
+      genres: movie.genres,
+      director: movie.director,
+      cast: movie.cast,
+      trailerYoutubeId: movie.trailerYoutubeId,
     };
   },
-  head: ({ loaderData, params }) =>
-    loaderData
-      ? {
-          meta: [
-            { title: `${loaderData.title} (${loaderData.year}) — LumoroX AI` },
-            { name: "description", content: loaderData.overview.slice(0, 155) },
-            { property: "og:title", content: `${loaderData.title} (${loaderData.year})` },
-            { property: "og:description", content: loaderData.overview.slice(0, 200) },
-            { property: "og:type", content: "video.movie" },
-            { property: "og:url", content: `/movie/${params.id}` },
-            ...(loaderData.posterUrl ? [{ property: "og:image" as const, content: loaderData.posterUrl }] : []),
-          ],
-          links: [{ rel: "canonical", href: `/movie/${params.id}` }],
-        }
-      : { meta: [{ title: "Movie — LumoroX AI" }] },
+  head: ({ loaderData, params }) => {
+    if (!loaderData) return { meta: [{ title: "Movie — LumoroX AI" }] };
+    const url = `https://lumorox.lovable.app/movie/${params.id}`;
+    const d = loaderData;
+    const title = `${d.title} (${d.year}) — Review, Trailer & Synopsis | LumoroX AI`;
+    const description =
+      `${d.title} (${d.year}): ${d.overview}`.slice(0, 155).trim() + "…";
+    const movieSchema: Record<string, unknown> = {
+      "@context": "https://schema.org",
+      "@type": "Movie",
+      name: d.title,
+      url,
+      description: d.overview,
+      dateCreated: String(d.year),
+      genre: d.genres,
+      ...(d.posterUrl ? { image: d.posterUrl } : {}),
+      ...(d.runtime ? { duration: `PT${d.runtime}M` } : {}),
+      ...(d.director ? { director: { "@type": "Person", name: d.director } } : {}),
+      ...(d.cast?.length
+        ? { actor: d.cast.slice(0, 6).map((name: string) => ({ "@type": "Person", name })) }
+        : {}),
+      ...(d.rating
+        ? {
+            aggregateRating: {
+              "@type": "AggregateRating",
+              ratingValue: Number(d.rating.toFixed(1)),
+              bestRating: 10,
+              worstRating: 0,
+              ratingCount: 1,
+            },
+          }
+        : {}),
+      ...(d.trailerYoutubeId
+        ? {
+            trailer: {
+              "@type": "VideoObject",
+              name: `${d.title} — Official Trailer`,
+              embedUrl: `https://www.youtube.com/embed/${d.trailerYoutubeId}`,
+              thumbnailUrl: `https://img.youtube.com/vi/${d.trailerYoutubeId}/hqdefault.jpg`,
+              description: d.overview.slice(0, 200),
+              uploadDate: `${d.year}-01-01`,
+            },
+          }
+        : {}),
+    };
+    const breadcrumbs = {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        { "@type": "ListItem", position: 1, name: "Home", item: "https://lumorox.lovable.app/" },
+        { "@type": "ListItem", position: 2, name: "Movies", item: "https://lumorox.lovable.app/search" },
+        { "@type": "ListItem", position: 3, name: d.title, item: url },
+      ],
+    };
+    return {
+      meta: [
+        { title },
+        { name: "description", content: description },
+        { property: "og:title", content: `${d.title} (${d.year}) — Trailer, Review & Synopsis` },
+        { property: "og:description", content: d.overview.slice(0, 200) },
+        { property: "og:type", content: "video.movie" },
+        { property: "og:url", content: url },
+        { name: "twitter:card", content: "summary_large_image" },
+        { name: "twitter:title", content: `${d.title} (${d.year})` },
+        { name: "twitter:description", content: d.overview.slice(0, 200) },
+        ...(d.posterUrl
+          ? [
+              { property: "og:image" as const, content: d.posterUrl },
+              { name: "twitter:image" as const, content: d.posterUrl },
+            ]
+          : []),
+      ],
+      links: [{ rel: "canonical", href: url }],
+      scripts: [
+        { type: "application/ld+json", children: JSON.stringify(movieSchema) },
+        { type: "application/ld+json", children: JSON.stringify(breadcrumbs) },
+      ],
+    };
+  },
+
   component: MoviePage,
   notFoundComponent: () => (
     <div className="container mx-auto px-4 py-20 text-center">

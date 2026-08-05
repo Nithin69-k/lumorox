@@ -26,9 +26,10 @@ export function Hero({ movie }: { movie: Movie }) {
           <span className="inline-flex items-center gap-2 rounded-full glass px-3 py-1 text-xs uppercase tracking-widest text-muted-foreground">
             <span className="h-1.5 w-1.5 rounded-full bg-brand" /> Featured tonight
           </span>
-          <h1 className="mt-4 font-display text-5xl leading-none tracking-tight text-foreground sm:text-7xl md:text-[5.5rem]">
+          <h2 className="mt-4 font-display text-5xl leading-none tracking-tight text-foreground sm:text-7xl md:text-[5.5rem]">
             {movie.title}
-          </h1>
+          </h2>
+
           <div className="mt-4 flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
             <span className="flex items-center gap-1 text-[var(--gold)]">
               <Star className="h-4 w-4 fill-current" /> {movie.rating.toFixed(1)}

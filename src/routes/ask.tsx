@@ -14,9 +14,9 @@ export const Route = createFileRoute("/ask")({
       { name: "description", content: "Describe the movie you want in plain English. LumoroX AI parses your intent, embeds it, and finds semantic matches with explainable reasons." },
       { property: "og:title", content: "Ask LumoroX — Natural-Language Movie Search" },
       { property: "og:description", content: "Describe the movie you want in plain English. LumoroX AI parses your intent and finds semantic matches." },
-      { property: "og:url", content: "/ask" },
+      { property: "og:url", content: "https://lumorox.lovable.app/ask" },
     ],
-    links: [{ rel: "canonical", href: "/ask" }],
+    links: [{ rel: "canonical", href: "https://lumorox.lovable.app/ask" }],
   }),
   component: AskPage,
 });

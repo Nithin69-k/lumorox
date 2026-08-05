@@ -97,11 +97,29 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         children: JSON.stringify({
           "@context": "https://schema.org",
           "@type": "WebSite",
+          "@id": "https://lumorox.lovable.app/#website",
           name: "LumoroX AI",
-          description: "AI-powered movie recommendations.",
+          url: "https://lumorox.lovable.app/",
+          description:
+            "AI-powered movie discovery: reviews, ratings, trailers, synopses and personalized recommendations.",
+          inLanguage: "en",
+          publisher: {
+            "@type": "Organization",
+            name: "LumoroX AI",
+            url: "https://lumorox.lovable.app/",
+          },
+          potentialAction: {
+            "@type": "SearchAction",
+            target: {
+              "@type": "EntryPoint",
+              urlTemplate: "https://lumorox.lovable.app/search?q={search_term_string}",
+            },
+            "query-input": "required name=search_term_string",
+          },
         }),
       },
     ],
+
   }),
   shellComponent: RootShell,
   component: RootComponent,

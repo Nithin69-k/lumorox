@@ -7,8 +7,15 @@ function baseUrl(request: Request): string {
   if (explicit) return explicit.replace(/\/$/, "");
   const vercel = process.env.VERCEL_PROJECT_PRODUCTION_URL || process.env.VERCEL_URL;
   if (vercel) return `https://${vercel}`;
-  return new URL(request.url).origin;
+  try {
+    const origin = new URL(request.url).origin;
+    if (origin.startsWith("http")) return origin;
+  } catch {
+    /* fall through */
+  }
+  return "https://lumorox.lovable.app";
 }
+
 
 interface SitemapEntry {
   path: string;
@@ -27,6 +34,7 @@ export const Route = createFileRoute("/sitemap.xml")({
           { path: "/search", changefreq: "weekly", priority: "0.8" },
           { path: "/recommendations", changefreq: "daily", priority: "0.8" },
           { path: "/mood", changefreq: "weekly", priority: "0.7" },
+          { path: "/ask", changefreq: "weekly", priority: "0.8" },
           { path: "/watchlist", changefreq: "monthly", priority: "0.5" },
           ...MOVIES.map((m) => ({ path: `/movie/${m.id}`, changefreq: "monthly" as const, priority: "0.6" })),
         ];

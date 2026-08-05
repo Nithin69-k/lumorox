@@ -30,9 +30,9 @@ export const Route = createFileRoute("/")({
       { name: "description", content: "Trending, top rated, and personalized movie recommendations powered by TMDB." },
       { property: "og:title", content: "LumoroX AI — Discover Your Next Favorite Movie" },
       { property: "og:description", content: "Trending, top rated, and personalized movie recommendations." },
-      { property: "og:url", content: "/" },
+      { property: "og:url", content: "https://lumorox.lovable.app/" },
     ],
-    links: [{ rel: "canonical", href: "/" }],
+    links: [{ rel: "canonical", href: "https://lumorox.lovable.app/" }],
   }),
   loader: ({ context }) => {
     context.queryClient.ensureQueryData(trendingOpts);
@@ -51,7 +51,11 @@ function HomePage() {
 
   return (
     <>
+      <h1 className="sr-only">
+        LumoroX AI — movie reviews, ratings, trailers, synopses and AI recommendations
+      </h1>
       {hero && <Hero movie={hero} />}
+
 
       <div className="space-y-2 pb-10">
         <MovieRow title="Trending Now" movies={trendingList} />
