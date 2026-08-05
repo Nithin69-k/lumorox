@@ -51,7 +51,11 @@ function HomePage() {
 
   return (
     <>
+      <h1 className="sr-only">
+        LumoroX AI — movie reviews, ratings, trailers, synopses and AI recommendations
+      </h1>
       {hero && <Hero movie={hero} />}
+
 
       <div className="space-y-2 pb-10">
         <MovieRow title="Trending Now" movies={trendingList} />
