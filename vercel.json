@@ -4,5 +4,11 @@
   "installCommand": "npm install",
   "buildCommand": "NITRO_PRESET=vercel npm run build",
   "outputDirectory": ".vercel/output",
-  "github": { "silent": true }
+  "github": { "silent": true },
+  "crons": [
+    {
+      "path": "/api/public/hooks/refresh-catalog",
+      "schedule": "0 5 * * *"
+    }
+  ]
 }
