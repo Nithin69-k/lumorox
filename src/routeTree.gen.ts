@@ -20,6 +20,7 @@ import { Route as SearchRouteImport } from './routes/search'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as WatchlistRouteImport } from './routes/watchlist'
 import { Route as MovieIdRouteImport } from './routes/movie.$id'
+import { Route as ApiPublicHooksRefreshCatalogRouteImport } from './routes/api/public/hooks/refresh-catalog'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -76,6 +77,12 @@ const MovieIdRoute = MovieIdRouteImport.update({
   path: '/movie/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicHooksRefreshCatalogRoute =
+  ApiPublicHooksRefreshCatalogRouteImport.update({
+    id: '/api/public/hooks/refresh-catalog',
+    path: '/api/public/hooks/refresh-catalog',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -89,6 +96,7 @@ export interface FileRoutesByFullPath {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/watchlist': typeof WatchlistRoute
   '/movie/$id': typeof MovieIdRoute
+  '/api/public/hooks/refresh-catalog': typeof ApiPublicHooksRefreshCatalogRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -102,6 +110,7 @@ export interface FileRoutesByTo {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/watchlist': typeof WatchlistRoute
   '/movie/$id': typeof MovieIdRoute
+  '/api/public/hooks/refresh-catalog': typeof ApiPublicHooksRefreshCatalogRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -116,6 +125,7 @@ export interface FileRoutesById {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/watchlist': typeof WatchlistRoute
   '/movie/$id': typeof MovieIdRoute
+  '/api/public/hooks/refresh-catalog': typeof ApiPublicHooksRefreshCatalogRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -131,6 +141,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/watchlist'
     | '/movie/$id'
+    | '/api/public/hooks/refresh-catalog'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -144,6 +155,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/watchlist'
     | '/movie/$id'
+    | '/api/public/hooks/refresh-catalog'
   id:
     | '__root__'
     | '/'
@@ -157,6 +169,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/watchlist'
     | '/movie/$id'
+    | '/api/public/hooks/refresh-catalog'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -171,6 +184,7 @@ export interface RootRouteChildren {
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   WatchlistRoute: typeof WatchlistRoute
   MovieIdRoute: typeof MovieIdRoute
+  ApiPublicHooksRefreshCatalogRoute: typeof ApiPublicHooksRefreshCatalogRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -252,6 +266,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MovieIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/refresh-catalog': {
+      id: '/api/public/hooks/refresh-catalog'
+      path: '/api/public/hooks/refresh-catalog'
+      fullPath: '/api/public/hooks/refresh-catalog'
+      preLoaderRoute: typeof ApiPublicHooksRefreshCatalogRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -267,6 +288,7 @@ const rootRouteChildren: RootRouteChildren = {
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   WatchlistRoute: WatchlistRoute,
   MovieIdRoute: MovieIdRoute,
+  ApiPublicHooksRefreshCatalogRoute: ApiPublicHooksRefreshCatalogRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
