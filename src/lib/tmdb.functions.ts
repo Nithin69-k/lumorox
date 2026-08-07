@@ -2,6 +2,10 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import type { Movie } from "@/data/movies";
 import type { Genre } from "@/data/genres";
+import {
+  safe, fbTrending, fbPopular, fbTopRated, fbUpcoming, fbNewest,
+  fbByGenre, fbByGenres, fbDiscover, fbDetails, fbSimilar,
+} from "@/lib/tmdb-fallback";
 
 const TMDB_BASE = "https://api.themoviedb.org/3";
 const IMG = "https://image.tmdb.org/t/p";
@@ -127,34 +131,50 @@ function sortList(list: Movie[], sort?: string): Movie[] {
   }
 }
 
-export const getTrending = createServerFn({ method: "GET" }).handler(async () => {
-  const data = await tmdb<{ results: TmdbListItem[] }>("/trending/movie/week");
-  return normalizeList(data.results);
-});
+export const getTrending = createServerFn({ method: "GET" }).handler(async () =>
+  safe(async () => {
+    const data = await tmdb<{ results: TmdbListItem[] }>("/trending/movie/week");
+    const list = normalizeList(data.results);
+    return list.length ? list : fbTrending();
+  }, fbTrending),
+);
 
-export const getPopular = createServerFn({ method: "GET" }).handler(async () => {
-  const data = await tmdb<{ results: TmdbListItem[] }>("/movie/popular");
-  return normalizeList(data.results);
-});
+export const getPopular = createServerFn({ method: "GET" }).handler(async () =>
+  safe(async () => {
+    const data = await tmdb<{ results: TmdbListItem[] }>("/movie/popular");
+    const list = normalizeList(data.results);
+    return list.length ? list : fbPopular();
+  }, fbPopular),
+);
 
-export const getTopRated = createServerFn({ method: "GET" }).handler(async () => {
-  const data = await tmdb<{ results: TmdbListItem[] }>("/movie/top_rated");
-  return normalizeList(data.results);
-});
+export const getTopRated = createServerFn({ method: "GET" }).handler(async () =>
+  safe(async () => {
+    const data = await tmdb<{ results: TmdbListItem[] }>("/movie/top_rated");
+    const list = normalizeList(data.results);
+    return list.length ? list : fbTopRated();
+  }, fbTopRated),
+);
 
-export const getUpcoming = createServerFn({ method: "GET" }).handler(async () => {
-  const data = await tmdb<{ results: TmdbListItem[] }>("/movie/upcoming");
-  return normalizeList(data.results);
-});
+export const getUpcoming = createServerFn({ method: "GET" }).handler(async () =>
+  safe(async () => {
+    const data = await tmdb<{ results: TmdbListItem[] }>("/movie/upcoming");
+    const list = normalizeList(data.results);
+    return list.length ? list : fbUpcoming();
+  }, fbUpcoming),
+);
 
 // Currently in cinemas
-export const getNowPlaying = createServerFn({ method: "GET" }).handler(async () => {
-  const data = await tmdb<{ results: TmdbListItem[] }>("/movie/now_playing");
-  return normalizeList(data.results);
-});
+export const getNowPlaying = createServerFn({ method: "GET" }).handler(async () =>
+  safe(async () => {
+    const data = await tmdb<{ results: TmdbListItem[] }>("/movie/now_playing");
+    const list = normalizeList(data.results);
+    return list.length ? list : fbNewest();
+  }, fbNewest),
+);
 
 // Freshly released titles (last 60 days), newest first
-export const getLatestReleases = createServerFn({ method: "GET" }).handler(async () => {
+export const getLatestReleases = createServerFn({ method: "GET" }).handler(async () =>
+  safe(async () => {
   const today = new Date();
   const from = new Date(today.getTime() - 60 * 24 * 60 * 60_000);
   const iso = (d: Date) => d.toISOString().slice(0, 10);
@@ -165,31 +185,37 @@ export const getLatestReleases = createServerFn({ method: "GET" }).handler(async
     "vote_count.gte": 20,
     include_adult: "false",
   });
-  return normalizeList(data.results);
-});
-
-
+  const list = normalizeList(data.results);
+  return list.length ? list : fbNewest();
+  }, fbNewest),
+);
 
 export const getByGenre = createServerFn({ method: "GET" })
   .inputValidator((d: { genre: string }) => z.object({ genre: z.string() }).parse(d))
   .handler(async ({ data }) => {
     const id = GENRE_NAME_TO_ID[data.genre];
-    if (!id) return [] as Movie[];
-    const res = await tmdb<{ results: TmdbListItem[] }>("/discover/movie", {
-      with_genres: id, sort_by: "popularity.desc", "vote_count.gte": 200,
-    });
-    return normalizeList(res.results);
+    if (!id) return fbByGenre(data.genre);
+    return safe(async () => {
+      const res = await tmdb<{ results: TmdbListItem[] }>("/discover/movie", {
+        with_genres: id, sort_by: "popularity.desc", "vote_count.gte": 200,
+      });
+      const list = normalizeList(res.results);
+      return list.length ? list : fbByGenre(data.genre);
+    }, () => fbByGenre(data.genre));
   });
 
 export const getMoodMovies = createServerFn({ method: "GET" })
   .inputValidator((d: { genres: string[] }) => z.object({ genres: z.array(z.string()) }).parse(d))
   .handler(async ({ data }) => {
     const ids = data.genres.map((g) => GENRE_NAME_TO_ID[g]).filter(Boolean).join("|");
-    if (!ids) return [] as Movie[];
-    const res = await tmdb<{ results: TmdbListItem[] }>("/discover/movie", {
-      with_genres: ids, sort_by: "popularity.desc", "vote_count.gte": 100,
-    });
-    return normalizeList(res.results);
+    if (!ids) return fbByGenres(data.genres);
+    return safe(async () => {
+      const res = await tmdb<{ results: TmdbListItem[] }>("/discover/movie", {
+        with_genres: ids, sort_by: "popularity.desc", "vote_count.gte": 100,
+      });
+      const list = normalizeList(res.results);
+      return list.length ? list : fbByGenres(data.genres);
+    }, () => fbByGenres(data.genres));
   });
 
 export const discoverMovies = createServerFn({ method: "GET" })
@@ -201,7 +227,7 @@ export const discoverMovies = createServerFn({ method: "GET" })
       min: z.number().optional(),
       sort: z.string().optional(),
     }).parse(d))
-  .handler(async ({ data }) => {
+  .handler(async ({ data }) => safe(async () => {
     if (data.q && data.q.trim()) {
       const res = await tmdb<{ results: TmdbListItem[] }>("/search/movie", {
         query: data.q, include_adult: "false",
@@ -225,8 +251,9 @@ export const discoverMovies = createServerFn({ method: "GET" })
       "vote_count.gte": 100,
       sort_by: sortMap[data.sort || "popularity"] || "popularity.desc",
     });
-    return normalizeList(res.results);
-  });
+    const list = normalizeList(res.results);
+    return list.length ? list : fbDiscover(data);
+  }, () => fbDiscover(data)));
 
 interface TmdbDetails extends TmdbListItem {
   runtime?: number;
@@ -273,7 +300,7 @@ export const getMovieDetails = createServerFn({ method: "GET" })
         trailerYoutubeId: trailer?.key ?? null,
       };
     } catch {
-      return null;
+      return fbDetails(data.id);
     }
   });
 
@@ -282,9 +309,10 @@ export const getSimilar = createServerFn({ method: "GET" })
   .handler(async ({ data }) => {
     try {
       const res = await tmdb<{ results: TmdbListItem[] }>(`/movie/${data.id}/recommendations`);
-      return normalizeList(res.results);
+      const list = normalizeList(res.results);
+      return list.length ? list : fbSimilar(data.id);
     } catch {
-      return [] as Movie[];
+      return fbSimilar(data.id);
     }
   });
 
@@ -441,8 +469,15 @@ export const getPersonalizedRecommendations = createServerFn({ method: "POST" })
 
     if (seedIds.length === 0) {
       // Cold start: return trending as ScoredMovie w/ generic reasons
-      const trending = await tmdb<{ results: TmdbListItem[] }>("/trending/movie/week");
-      return normalizeList(trending.results).slice(0, 24).map((m): ScoredMovie => ({
+      const trending = await safe(
+        async () => {
+          const r = await tmdb<{ results: TmdbListItem[] }>("/trending/movie/week");
+          const l = normalizeList(r.results);
+          return l.length ? l : fbTrending();
+        },
+        fbTrending,
+      );
+      return trending.slice(0, 24).map((m): ScoredMovie => ({
         movie: m,
         score: m.rating / 10 * 0.5 + m.popularity / 100 * 0.5,
         breakdown: { genre: 0, keyword: 0, cast: 0, director: 0, year: 0, popularity: m.popularity / 100, quality: m.rating / 10, total: 0 },
