@@ -51,9 +51,8 @@ async function tmdbFetch<T>(path: string, params: Record<string, string | number
     if (v !== undefined && v !== "" && v !== null) url.searchParams.set(k, String(v));
   }
   if (key) url.searchParams.set("api_key", key);
-  const headers = accessToken && !key
-    ? { Authorization: `Bearer ${accessToken}`, Accept: "application/json" }
-    : { Accept: "application/json" };
+  const headers = new Headers({ Accept: "application/json" });
+  if (accessToken && !key) headers.set("Authorization", `Bearer ${accessToken}`);
   const res = await fetch(url.toString(), {
     headers,
     cf: { cacheTtl: 3600, cacheEverything: true },

@@ -35,9 +35,8 @@ async function refresh() {
         url.searchParams.set("page", "1");
         // cache: no-store forces a fresh upstream read so the next request
         // repopulates caches with today's data.
-        const headers = accessToken && !key
-          ? { Authorization: `Bearer ${accessToken}`, Accept: "application/json" }
-          : { Accept: "application/json" };
+        const headers = new Headers({ Accept: "application/json" });
+        if (accessToken && !key) headers.set("Authorization", `Bearer ${accessToken}`);
         const res = await fetch(url.toString(), { cache: "no-store", headers });
         if (!res.ok) return { path, ok: false, status: res.status, count: 0 };
         const json = (await res.json()) as { results?: unknown[] };

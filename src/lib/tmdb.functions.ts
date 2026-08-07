@@ -62,9 +62,8 @@ async function tmdb<T>(path: string, params: Record<string, string | number | un
   if (hit && hit.expires > now) return hit.data as T;
 
   if (key) url.searchParams.set("api_key", key);
-  const headers = accessToken && !key
-    ? { Authorization: `Bearer ${accessToken}`, Accept: "application/json" }
-    : { Accept: "application/json" };
+  const headers = new Headers({ Accept: "application/json" });
+  if (accessToken && !key) headers.set("Authorization", `Bearer ${accessToken}`);
   const res = await fetch(url.toString(), {
     headers,
     // Also let the platform fetch cache dedupe identical concurrent requests
