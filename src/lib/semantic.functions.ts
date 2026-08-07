@@ -43,14 +43,18 @@ interface TmdbDetails extends TmdbListItem {
 }
 
 async function tmdbFetch<T>(path: string, params: Record<string, string | number | undefined> = {}): Promise<T> {
-  const key = process.env.TMDB_API_KEY;
-  if (!key) throw new Error("TMDB_API_KEY not configured");
+  const key = process.env["TMDB_API_KEY"]?.trim();
+  const accessToken = process.env["TMDB_ACCESS_TOKEN"]?.trim();
+  if (!key && !accessToken) throw new Error("TMDB credentials not configured");
   const url = new URL(`${TMDB_BASE}${path}`);
   for (const [k, v] of Object.entries(params)) {
     if (v !== undefined && v !== "" && v !== null) url.searchParams.set(k, String(v));
   }
-  url.searchParams.set("api_key", key);
+  if (key) url.searchParams.set("api_key", key);
+  const headers = new Headers({ Accept: "application/json" });
+  if (accessToken && !key) headers.set("Authorization", `Bearer ${accessToken}`);
   const res = await fetch(url.toString(), {
+    headers,
     cf: { cacheTtl: 3600, cacheEverything: true },
   } as RequestInit);
   if (!res.ok) throw new Error(`TMDB ${path} ${res.status}`);

@@ -49,8 +49,9 @@ function ttlFor(path: string): number {
 }
 
 async function tmdb<T>(path: string, params: Record<string, string | number | undefined> = {}): Promise<T> {
-  const key = process.env.TMDB_API_KEY;
-  if (!key) throw new Error("TMDB_API_KEY not configured");
+  const key = process.env["TMDB_API_KEY"]?.trim();
+  const accessToken = process.env["TMDB_ACCESS_TOKEN"]?.trim();
+  if (!key && !accessToken) throw new Error("TMDB credentials not configured");
   const url = new URL(`${TMDB_BASE}${path}`);
   for (const [k, v] of Object.entries(params)) {
     if (v !== undefined && v !== "" && v !== null) url.searchParams.set(k, String(v));
@@ -60,8 +61,11 @@ async function tmdb<T>(path: string, params: Record<string, string | number | un
   const hit = CACHE.get(cacheKey);
   if (hit && hit.expires > now) return hit.data as T;
 
-  url.searchParams.set("api_key", key);
+  if (key) url.searchParams.set("api_key", key);
+  const headers = new Headers({ Accept: "application/json" });
+  if (accessToken && !key) headers.set("Authorization", `Bearer ${accessToken}`);
   const res = await fetch(url.toString(), {
+    headers,
     // Also let the platform fetch cache dedupe identical concurrent requests
     cf: { cacheTtl: Math.floor(ttlFor(path) / 1000), cacheEverything: true },
   } as RequestInit);

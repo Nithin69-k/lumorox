@@ -17,10 +17,11 @@ const ENDPOINTS = [
 ] as const;
 
 async function refresh() {
-  const key = process.env["TMDB_API_KEY"];
-  if (!key) {
+  const key = process.env["TMDB_API_KEY"]?.trim();
+  const accessToken = process.env["TMDB_ACCESS_TOKEN"]?.trim();
+  if (!key && !accessToken) {
     return Response.json(
-      { ok: false, error: "TMDB_API_KEY not configured" },
+      { ok: false, error: "TMDB credentials not configured" },
       { status: 503 },
     );
   }
@@ -29,12 +30,14 @@ async function refresh() {
     ENDPOINTS.map(async (path) => {
       try {
         const url = new URL(`https://api.themoviedb.org/3${path}`);
-        url.searchParams.set("api_key", key);
+        if (key) url.searchParams.set("api_key", key);
         url.searchParams.set("language", "en-US");
         url.searchParams.set("page", "1");
         // cache: no-store forces a fresh upstream read so the next request
         // repopulates caches with today's data.
-        const res = await fetch(url.toString(), { cache: "no-store" });
+        const headers = new Headers({ Accept: "application/json" });
+        if (accessToken && !key) headers.set("Authorization", `Bearer ${accessToken}`);
+        const res = await fetch(url.toString(), { cache: "no-store", headers });
         if (!res.ok) return { path, ok: false, status: res.status, count: 0 };
         const json = (await res.json()) as { results?: unknown[] };
         return { path, ok: true, status: 200, count: json.results?.length ?? 0 };
