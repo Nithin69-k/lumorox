@@ -8,6 +8,7 @@ import {
   Scripts,
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
+import { Analytics } from "@vercel/analytics/react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -162,6 +163,7 @@ function RootComponent() {
         <p>LumoroX AI · Powered by curated cinema & local intelligence</p>
       </footer>
       <Toaster />
+      <Analytics />
     </QueryClientProvider>
   );
 }
