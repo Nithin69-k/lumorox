@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import type { Movie } from "@/data/movies";
 
@@ -9,12 +10,21 @@ interface Props {
 
 /** Cinematic generated poster — used when no remote poster URL is available. */
 export function MoviePoster({ movie, className, rounded = "rounded-lg" }: Props) {
-  if (movie.posterUrl) {
+  const [imageFailed, setImageFailed] = useState(false);
+
+  useEffect(() => {
+    setImageFailed(false);
+  }, [movie.posterUrl]);
+
+  if (movie.posterUrl && !imageFailed) {
     return (
       <img
         src={movie.posterUrl}
         alt={`${movie.title} poster`}
         loading="lazy"
+        decoding="async"
+        referrerPolicy="no-referrer"
+        onError={() => setImageFailed(true)}
         className={cn("h-full w-full object-cover", rounded, className)}
       />
     );
