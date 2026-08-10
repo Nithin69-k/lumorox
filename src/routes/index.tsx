@@ -143,12 +143,29 @@ function NowPlayingRow() {
 }
 function LatestRow() {
   const { data } = useSuspenseQuery(latestOpts);
-  return <MovieRow title="Just Released" movies={data} />;
+  return <MovieRow title="New Movies" movies={data} />;
 }
 function PopularRow() {
   const { data } = useSuspenseQuery(popularOpts);
-  return <MovieRow title="Popular This Week" movies={data} />;
+  return <MovieRow title="Popular Right Now" movies={data} />;
 }
+function TopTenRow() {
+  const { data } = useSuspenseQuery(topTenOpts);
+  return <MovieRow title="Top 10 Today" movies={data} />;
+}
+function BestMonthRow() {
+  const { data } = useSuspenseQuery(bestMonthOpts);
+  return <MovieRow title="Best This Month" movies={data} />;
+}
+function AllTimeRow() {
+  const { data } = useSuspenseQuery(allTimeOpts);
+  return <MovieRow title="Best Movies of All Time" movies={data} />;
+}
+function LanguageRow({ lang, title }: { lang: string; title: string }) {
+  const { data } = useSuspenseQuery(langOpts(lang));
+  return <MovieRow title={title} movies={data} />;
+}
+
 function TopRatedRow() {
   const { data } = useSuspenseQuery(topRatedOpts);
   return <MovieRow title="Top Rated" movies={data} />;
