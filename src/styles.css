@@ -212,7 +212,7 @@
 
 /* Fades the horizontal edges of scrolling rows */
 @utility edge-fade {
-  mask-image: linear-gradient(90deg, transparent 0, #000 44px, #000 calc(100% - 44px), transparent 100%);
+  mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 56px), transparent 100%);
 }
 
 /* Large outlined rank numeral for Top 10 */
