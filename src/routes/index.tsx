@@ -9,6 +9,7 @@ import { motion } from "framer-motion";
 import {
   getTrending, getPopular, getTopRated, getUpcoming, getByGenre,
   getNowPlaying, getLatestReleases,
+  getTopTenToday, getBestThisMonth, getAllTimeBest, getByLanguage,
 } from "@/lib/tmdb.functions";
 
 // Auto-refresh cadence for catalogue data (15 minutes)
@@ -21,7 +22,31 @@ const latestOpts = queryOptions({ queryKey: ["tmdb", "latest"], queryFn: () => g
 const popularOpts = queryOptions({ queryKey: ["tmdb", "popular"], queryFn: () => getPopular(), ...live });
 const topRatedOpts = queryOptions({ queryKey: ["tmdb", "topRated"], queryFn: () => getTopRated(), ...live });
 const upcomingOpts = queryOptions({ queryKey: ["tmdb", "upcoming"], queryFn: () => getUpcoming(), ...live });
+const topTenOpts = queryOptions({ queryKey: ["tmdb", "topTenToday"], queryFn: () => getTopTenToday(), ...live });
+const bestMonthOpts = queryOptions({ queryKey: ["tmdb", "bestMonth"], queryFn: () => getBestThisMonth(), ...live });
+const allTimeOpts = queryOptions({ queryKey: ["tmdb", "allTimeBest"], queryFn: () => getAllTimeBest(), ...live });
+const langOpts = (lang: string, window?: "recent" | "all") =>
+  queryOptions({
+    queryKey: ["tmdb", "lang", lang, window ?? "all"],
+    queryFn: () => getByLanguage({ data: { lang, ...(window ? { window } : {}) } }),
+    ...live,
+  });
 const genreOpts = (g: string) => queryOptions({ queryKey: ["tmdb", "genre", g], queryFn: () => getByGenre({ data: { genre: g } }), ...live });
+
+// Worldwide language rows shown on the home page
+const LANGUAGE_ROWS: Array<{ lang: string; title: string }> = [
+  { lang: "te", title: "Telugu Cinema" },
+  { lang: "ta", title: "Tamil Cinema" },
+  { lang: "kn", title: "Kannada Cinema" },
+  { lang: "ml", title: "Malayalam Cinema" },
+  { lang: "hi", title: "Hindi / Bollywood" },
+  { lang: "ja", title: "Japanese Cinema" },
+  { lang: "ko", title: "Korean Cinema" },
+  { lang: "zh", title: "Chinese Cinema" },
+  { lang: "es", title: "Spanish Cinema" },
+  { lang: "fr", title: "French Cinema" },
+];
+
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -41,6 +66,8 @@ export const Route = createFileRoute("/")({
     context.queryClient.prefetchQuery(popularOpts);
     context.queryClient.prefetchQuery(topRatedOpts);
     context.queryClient.prefetchQuery(upcomingOpts);
+    context.queryClient.prefetchQuery(topTenOpts);
+    context.queryClient.prefetchQuery(bestMonthOpts);
   },
   component: HomePage,
 });
@@ -52,22 +79,33 @@ function HomePage() {
   return (
     <>
       <h1 className="sr-only">
-        LumoroX AI — movie reviews, ratings, trailers, synopses and AI recommendations
+        LumoroX AI — worldwide movie reviews, ratings, trailers, synopses and AI recommendations
       </h1>
       {hero && <Hero movie={hero} />}
 
 
       <div className="space-y-2 pb-10">
-        <MovieRow title="Trending Now" movies={trendingList} />
+        <Suspense fallback={<MovieRowSkeleton title="Top 10 Today" />}><TopTenRow /></Suspense>
+        <MovieRow title="Trending This Week" movies={trendingList} />
         <Suspense fallback={<MovieRowSkeleton title="In Cinemas Now" />}><NowPlayingRow /></Suspense>
-        <Suspense fallback={<MovieRowSkeleton title="Just Released" />}><LatestRow /></Suspense>
-        <Suspense fallback={<MovieRowSkeleton title="Popular This Week" />}><PopularRow /></Suspense>
+        <Suspense fallback={<MovieRowSkeleton title="New Movies" />}><LatestRow /></Suspense>
+        <Suspense fallback={<MovieRowSkeleton title="Best This Month" />}><BestMonthRow /></Suspense>
+        <Suspense fallback={<MovieRowSkeleton title="Popular Right Now" />}><PopularRow /></Suspense>
         <Suspense fallback={<MovieRowSkeleton title="Top Rated" />}><TopRatedRow /></Suspense>
+        <Suspense fallback={<MovieRowSkeleton title="Best Movies of All Time" />}><AllTimeRow /></Suspense>
         <Suspense fallback={<MovieRowSkeleton title="Coming Soon" />}><UpcomingRow /></Suspense>
+
+        {LANGUAGE_ROWS.map((l) => (
+          <Suspense key={l.lang} fallback={<MovieRowSkeleton title={l.title} />}>
+            <LanguageRow lang={l.lang} title={l.title} />
+          </Suspense>
+        ))}
+
         <Suspense fallback={<MovieRowSkeleton title="Action & Adventure" />}><GenreRow genre="Action" title="Action & Adventure" /></Suspense>
         <Suspense fallback={<MovieRowSkeleton title="Mind-Bending Sci-Fi" />}><GenreRow genre="Science Fiction" title="Mind-Bending Sci-Fi" /></Suspense>
         <Suspense fallback={<MovieRowSkeleton title="Drama Spotlight" />}><GenreRow genre="Drama" title="Drama Spotlight" /></Suspense>
         <Suspense fallback={<MovieRowSkeleton title="Animation Picks" />}><GenreRow genre="Animation" title="Animation Picks" /></Suspense>
+
 
 
         <section className="container mx-auto px-4 py-10">
@@ -105,12 +143,29 @@ function NowPlayingRow() {
 }
 function LatestRow() {
   const { data } = useSuspenseQuery(latestOpts);
-  return <MovieRow title="Just Released" movies={data} />;
+  return <MovieRow title="New Movies" movies={data} />;
 }
 function PopularRow() {
   const { data } = useSuspenseQuery(popularOpts);
-  return <MovieRow title="Popular This Week" movies={data} />;
+  return <MovieRow title="Popular Right Now" movies={data} />;
 }
+function TopTenRow() {
+  const { data } = useSuspenseQuery(topTenOpts);
+  return <MovieRow title="Top 10 Today" movies={data} />;
+}
+function BestMonthRow() {
+  const { data } = useSuspenseQuery(bestMonthOpts);
+  return <MovieRow title="Best This Month" movies={data} />;
+}
+function AllTimeRow() {
+  const { data } = useSuspenseQuery(allTimeOpts);
+  return <MovieRow title="Best Movies of All Time" movies={data} />;
+}
+function LanguageRow({ lang, title }: { lang: string; title: string }) {
+  const { data } = useSuspenseQuery(langOpts(lang));
+  return <MovieRow title={title} movies={data} />;
+}
+
 function TopRatedRow() {
   const { data } = useSuspenseQuery(topRatedOpts);
   return <MovieRow title="Top Rated" movies={data} />;
