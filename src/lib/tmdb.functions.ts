@@ -537,3 +537,73 @@ export const getPersonalizedRecommendations = createServerFn({ method: "POST" })
     return scored.sort((a, b) => b.score - a.score).slice(0, 24);
   });
 
+
+// ---------------------------------------------------------------------------
+// Worldwide / regional catalogue rows
+// ---------------------------------------------------------------------------
+
+const iso = (d: Date) => d.toISOString().slice(0, 10);
+
+/** Top 10 trending today, worldwide. */
+export const getTopTenToday = createServerFn({ method: "GET" }).handler(async () =>
+  safe(async () => {
+    const data = await tmdb<{ results: TmdbListItem[] }>("/trending/movie/day");
+    const list = normalizeList(data.results).slice(0, 10);
+    return list.length ? list : fbTrending().slice(0, 10);
+  }, () => fbTrending().slice(0, 10)),
+);
+
+/** Best rated releases of the last 30 days. */
+export const getBestThisMonth = createServerFn({ method: "GET" }).handler(async () =>
+  safe(async () => {
+    const today = new Date();
+    const from = new Date(today.getTime() - 30 * 24 * 60 * 60_000);
+    const data = await tmdb<{ results: TmdbListItem[] }>("/discover/movie", {
+      sort_by: "vote_average.desc",
+      "primary_release_date.gte": iso(from),
+      "primary_release_date.lte": iso(today),
+      "vote_count.gte": 50,
+      include_adult: "false",
+    });
+    const list = normalizeList(data.results);
+    return list.length ? list : fbTopRated();
+  }, fbTopRated),
+);
+
+/** All-time greatest films (high vote count, high score). */
+export const getAllTimeBest = createServerFn({ method: "GET" }).handler(async () =>
+  safe(async () => {
+    const data = await tmdb<{ results: TmdbListItem[] }>("/discover/movie", {
+      sort_by: "vote_average.desc",
+      "vote_count.gte": 5000,
+      include_adult: "false",
+    });
+    const list = normalizeList(data.results);
+    return list.length ? list : fbTopRated();
+  }, fbTopRated),
+);
+
+/**
+ * Popular movies for a specific original language (e.g. te, ta, kn, hi, ml,
+ * ja, ko, zh, es, fr). Falls back to the local catalogue when TMDB is down.
+ */
+export const getByLanguage = createServerFn({ method: "GET" })
+  .inputValidator((d: { lang: string; window?: "recent" | "all" }) =>
+    z.object({ lang: z.string().min(2).max(5), window: z.enum(["recent", "all"]).optional() }).parse(d))
+  .handler(async ({ data }) =>
+    safe(async () => {
+      const today = new Date();
+      const from = new Date(today.getTime() - 365 * 24 * 60 * 60_000);
+      const res = await tmdb<{ results: TmdbListItem[] }>("/discover/movie", {
+        with_original_language: data.lang,
+        sort_by: "popularity.desc",
+        "vote_count.gte": 20,
+        include_adult: "false",
+        ...(data.window === "recent"
+          ? { "primary_release_date.gte": iso(from), "primary_release_date.lte": iso(today) }
+          : {}),
+      });
+      const list = normalizeList(res.results);
+      return list.length ? list : fbPopular();
+    }, fbPopular),
+  );
