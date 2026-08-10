@@ -9,6 +9,7 @@ import { motion } from "framer-motion";
 import {
   getTrending, getPopular, getTopRated, getUpcoming, getByGenre,
   getNowPlaying, getLatestReleases,
+  getTopTenToday, getBestThisMonth, getAllTimeBest, getByLanguage,
 } from "@/lib/tmdb.functions";
 
 // Auto-refresh cadence for catalogue data (15 minutes)
@@ -21,7 +22,31 @@ const latestOpts = queryOptions({ queryKey: ["tmdb", "latest"], queryFn: () => g
 const popularOpts = queryOptions({ queryKey: ["tmdb", "popular"], queryFn: () => getPopular(), ...live });
 const topRatedOpts = queryOptions({ queryKey: ["tmdb", "topRated"], queryFn: () => getTopRated(), ...live });
 const upcomingOpts = queryOptions({ queryKey: ["tmdb", "upcoming"], queryFn: () => getUpcoming(), ...live });
+const topTenOpts = queryOptions({ queryKey: ["tmdb", "topTenToday"], queryFn: () => getTopTenToday(), ...live });
+const bestMonthOpts = queryOptions({ queryKey: ["tmdb", "bestMonth"], queryFn: () => getBestThisMonth(), ...live });
+const allTimeOpts = queryOptions({ queryKey: ["tmdb", "allTimeBest"], queryFn: () => getAllTimeBest(), ...live });
+const langOpts = (lang: string, window?: "recent" | "all") =>
+  queryOptions({
+    queryKey: ["tmdb", "lang", lang, window ?? "all"],
+    queryFn: () => getByLanguage({ data: { lang, ...(window ? { window } : {}) } }),
+    ...live,
+  });
 const genreOpts = (g: string) => queryOptions({ queryKey: ["tmdb", "genre", g], queryFn: () => getByGenre({ data: { genre: g } }), ...live });
+
+// Worldwide language rows shown on the home page
+const LANGUAGE_ROWS: Array<{ lang: string; title: string }> = [
+  { lang: "te", title: "Telugu Cinema" },
+  { lang: "ta", title: "Tamil Cinema" },
+  { lang: "kn", title: "Kannada Cinema" },
+  { lang: "ml", title: "Malayalam Cinema" },
+  { lang: "hi", title: "Hindi / Bollywood" },
+  { lang: "ja", title: "Japanese Cinema" },
+  { lang: "ko", title: "Korean Cinema" },
+  { lang: "zh", title: "Chinese Cinema" },
+  { lang: "es", title: "Spanish Cinema" },
+  { lang: "fr", title: "French Cinema" },
+];
+
 
 export const Route = createFileRoute("/")({
   head: () => ({
