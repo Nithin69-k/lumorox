@@ -43,6 +43,7 @@ export function MovieCard({ movie, index = 0, className, reason, rank }: Props) 
       <Link
         to="/movie/$id"
         params={{ id: movie.id }}
+        search={{}}
         className="block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
         <div className="sheen relative aspect-[2/3] overflow-hidden rounded-xl shadow-[var(--shadow-card)] ring-1 ring-white/5 transition-all duration-300 group-hover:scale-[1.03] group-hover:shadow-[var(--shadow-glow)] group-hover:ring-brand/50">
