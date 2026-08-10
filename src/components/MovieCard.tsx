@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { motion } from "framer-motion";
-import { Star, Plus, Check } from "lucide-react";
+import { Star, Plus, Check, Play } from "lucide-react";
 import type { Movie } from "@/data/movies";
 import { MoviePoster } from "./MoviePoster";
 import { useUserStore } from "@/store/user";
