@@ -84,9 +84,9 @@ function HomePage() {
       {hero && <Hero movie={hero} />}
 
 
-      <div className="space-y-2 pb-10">
+      <div className="aurora space-y-2 pb-10">
         <Suspense fallback={<MovieRowSkeleton title="Top 10 Today" />}><TopTenRow /></Suspense>
-        <MovieRow title="Trending This Week" movies={trendingList} />
+        <MovieRow title="Trending This Week" subtitle="What the world is watching right now" movies={trendingList} />
         <Suspense fallback={<MovieRowSkeleton title="In Cinemas Now" />}><NowPlayingRow /></Suspense>
         <Suspense fallback={<MovieRowSkeleton title="New Movies" />}><LatestRow /></Suspense>
         <Suspense fallback={<MovieRowSkeleton title="Best This Month" />}><BestMonthRow /></Suspense>
@@ -108,30 +108,42 @@ function HomePage() {
 
 
 
-        <section className="container mx-auto px-4 py-10">
-          <h2 className="font-display text-3xl tracking-wide">Browse by Genre</h2>
-          <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+        <section className="container mx-auto px-4 py-12">
+          <h2 className="text-gradient font-display text-3xl tracking-wide">Browse by Genre</h2>
+          <div className="accent-rule mt-2" />
+          <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
             {GENRES.map((g, i) => (
               <motion.div
                 key={g}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: i * 0.02 }}
+                initial={{ opacity: 0, y: 10 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-40px" }}
+                transition={{ duration: 0.35, delay: (i % 8) * 0.03 }}
               >
                 <Link
                   to="/search"
                   search={{ q: "", genre: g, year: "", min: 0, sort: "popularity" }}
-                  className="group flex h-24 items-end overflow-hidden rounded-xl p-4 transition hover:scale-[1.02] hover:shadow-[var(--shadow-glow)]"
+                  className="group relative flex h-28 items-end overflow-hidden rounded-2xl border border-white/10 p-4 transition-all duration-300 hover:-translate-y-1 hover:border-brand/50 hover:shadow-[var(--shadow-glow)]"
                   style={{
-                    background: `linear-gradient(135deg, hsl(${(i * 37) % 360} 60% 25%), hsl(${(i * 37 + 60) % 360} 50% 12%))`,
+                    background: `linear-gradient(135deg, hsl(${(i * 37) % 360} 65% 26%), hsl(${(i * 37 + 60) % 360} 55% 10%))`,
                   }}
                 >
-                  <span className="font-display text-xl tracking-wide text-white">{g}</span>
+                  <span
+                    aria-hidden
+                    className="pointer-events-none absolute -right-4 -top-6 font-display text-7xl leading-none text-white/10 transition-transform duration-500 group-hover:scale-110 group-hover:text-white/20"
+                  >
+                    {g.slice(0, 2).toUpperCase()}
+                  </span>
+                  <span className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/55 to-transparent" />
+                  <span className="relative font-display text-xl tracking-wide text-white transition-transform duration-300 group-hover:translate-x-1">
+                    {g}
+                  </span>
                 </Link>
               </motion.div>
             ))}
           </div>
         </section>
+
       </div>
     </>
   );
@@ -151,7 +163,7 @@ function PopularRow() {
 }
 function TopTenRow() {
   const { data } = useSuspenseQuery(topTenOpts);
-  return <MovieRow title="Top 10 Today" movies={data} />;
+  return <MovieRow title="Top 10 Today" subtitle="Ranked by global viewers today" movies={data} ranked />;
 }
 function BestMonthRow() {
   const { data } = useSuspenseQuery(bestMonthOpts);
