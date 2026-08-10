@@ -66,6 +66,8 @@ export const Route = createFileRoute("/")({
     context.queryClient.prefetchQuery(popularOpts);
     context.queryClient.prefetchQuery(topRatedOpts);
     context.queryClient.prefetchQuery(upcomingOpts);
+    context.queryClient.prefetchQuery(topTenOpts);
+    context.queryClient.prefetchQuery(bestMonthOpts);
   },
   component: HomePage,
 });
@@ -77,22 +79,33 @@ function HomePage() {
   return (
     <>
       <h1 className="sr-only">
-        LumoroX AI — movie reviews, ratings, trailers, synopses and AI recommendations
+        LumoroX AI — worldwide movie reviews, ratings, trailers, synopses and AI recommendations
       </h1>
       {hero && <Hero movie={hero} />}
 
 
       <div className="space-y-2 pb-10">
-        <MovieRow title="Trending Now" movies={trendingList} />
+        <Suspense fallback={<MovieRowSkeleton title="Top 10 Today" />}><TopTenRow /></Suspense>
+        <MovieRow title="Trending This Week" movies={trendingList} />
         <Suspense fallback={<MovieRowSkeleton title="In Cinemas Now" />}><NowPlayingRow /></Suspense>
-        <Suspense fallback={<MovieRowSkeleton title="Just Released" />}><LatestRow /></Suspense>
-        <Suspense fallback={<MovieRowSkeleton title="Popular This Week" />}><PopularRow /></Suspense>
+        <Suspense fallback={<MovieRowSkeleton title="New Movies" />}><LatestRow /></Suspense>
+        <Suspense fallback={<MovieRowSkeleton title="Best This Month" />}><BestMonthRow /></Suspense>
+        <Suspense fallback={<MovieRowSkeleton title="Popular Right Now" />}><PopularRow /></Suspense>
         <Suspense fallback={<MovieRowSkeleton title="Top Rated" />}><TopRatedRow /></Suspense>
+        <Suspense fallback={<MovieRowSkeleton title="Best Movies of All Time" />}><AllTimeRow /></Suspense>
         <Suspense fallback={<MovieRowSkeleton title="Coming Soon" />}><UpcomingRow /></Suspense>
+
+        {LANGUAGE_ROWS.map((l) => (
+          <Suspense key={l.lang} fallback={<MovieRowSkeleton title={l.title} />}>
+            <LanguageRow lang={l.lang} title={l.title} />
+          </Suspense>
+        ))}
+
         <Suspense fallback={<MovieRowSkeleton title="Action & Adventure" />}><GenreRow genre="Action" title="Action & Adventure" /></Suspense>
         <Suspense fallback={<MovieRowSkeleton title="Mind-Bending Sci-Fi" />}><GenreRow genre="Science Fiction" title="Mind-Bending Sci-Fi" /></Suspense>
         <Suspense fallback={<MovieRowSkeleton title="Drama Spotlight" />}><GenreRow genre="Drama" title="Drama Spotlight" /></Suspense>
         <Suspense fallback={<MovieRowSkeleton title="Animation Picks" />}><GenreRow genre="Animation" title="Animation Picks" /></Suspense>
+
 
 
         <section className="container mx-auto px-4 py-10">
