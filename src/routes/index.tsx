@@ -163,7 +163,7 @@ function PopularRow() {
 }
 function TopTenRow() {
   const { data } = useSuspenseQuery(topTenOpts);
-  return <MovieRow title="Top 10 Today" movies={data} />;
+  return <MovieRow title="Top 10 Today" subtitle="Ranked by global viewers today" movies={data} ranked />;
 }
 function BestMonthRow() {
   const { data } = useSuspenseQuery(bestMonthOpts);
