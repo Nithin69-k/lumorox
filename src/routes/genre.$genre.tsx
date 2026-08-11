@@ -3,7 +3,7 @@ import { useInfiniteQuery } from "@tanstack/react-query";
 import { Loader2, ArrowLeft } from "lucide-react";
 import { MovieCard } from "@/components/MovieCard";
 import { MovieCardSkeleton } from "@/components/MovieCardSkeleton";
-import { genreFromSlug, genreSlug } from "@/data/genres";
+import { genreFromSlug } from "@/data/genres";
 import { getGenrePage } from "@/lib/tmdb.functions";
 
 export const Route = createFileRoute("/genre/$genre")({
@@ -109,5 +109,3 @@ function GenrePage() {
     </main>
   );
 }
-
-export { genreSlug };
