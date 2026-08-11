@@ -144,6 +144,11 @@ function MoviePage() {
     queryFn: () => getSemanticSimilar({ data: { id, limit: 12 } }),
     staleTime: 60 * 60_000,
   });
+  const { data: credits } = useQuery({
+    queryKey: ["tmdb", "credits", id],
+    queryFn: () => getMovieCredits({ data: { id } }),
+    staleTime: 6 * 60 * 60_000,
+  });
   const { play } = Route.useSearch();
   const [playing, setPlaying] = useState(Boolean(play));
   const liked = useUserStore((s) => s.likes.includes(id));
