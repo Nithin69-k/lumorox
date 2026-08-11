@@ -4,7 +4,7 @@ import { Suspense } from "react";
 import { MovieRow } from "@/components/MovieRow";
 import { MovieRowSkeleton } from "@/components/MovieCardSkeleton";
 import { Hero } from "@/components/Hero";
-import { GENRES } from "@/data/genres";
+import { GENRES, genreSlug } from "@/data/genres";
 import { motion } from "framer-motion";
 import {
   getTrending, getPopular, getTopRated, getUpcoming, getByGenre,
