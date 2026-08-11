@@ -607,3 +607,88 @@ export const getByLanguage = createServerFn({ method: "GET" })
       return list.length ? list : fbPopular();
     }, fbPopular),
   );
+
+// ============================================================================
+// Genre browsing (newest → oldest, paginated) + full credits for detail pages.
+// ============================================================================
+
+export const getGenrePage = createServerFn({ method: "GET" })
+  .inputValidator((d: { genre: string; page?: number }) =>
+    z.object({ genre: z.string().min(1), page: z.number().int().min(1).max(500).optional() }).parse(d))
+  .handler(async ({ data }) => {
+    const page = data.page ?? 1;
+    return safe(
+      async () => {
+        const id = GENRE_NAME_TO_ID[data.genre];
+        if (!id) return { movies: [] as Movie[], page, totalPages: 1 };
+        const today = new Date().toISOString().slice(0, 10);
+        const res = await tmdb<{ results: TmdbListItem[]; total_pages?: number }>("/discover/movie", {
+          with_genres: id,
+          sort_by: "primary_release_date.desc",
+          "primary_release_date.lte": today,
+          "vote_count.gte": 20,
+          include_adult: "false",
+          page,
+        });
+        const movies = normalizeList(res.results).sort((a, b) => b.year - a.year);
+        if (!movies.length && page === 1) {
+          return { movies: fbByGenre(data.genre).sort((a, b) => b.year - a.year), page, totalPages: 1 };
+        }
+        return { movies, page, totalPages: Math.min(res.total_pages ?? 1, 500) };
+      },
+      () => ({
+        movies: page === 1 ? fbByGenre(data.genre).sort((a, b) => b.year - a.year) : [],
+        page,
+        totalPages: 1,
+      }),
+    );
+  });
+
+export interface CreditPerson {
+  id: string;
+  name: string;
+  role: string;
+  profileUrl: string | null;
+}
+
+export const getMovieCredits = createServerFn({ method: "GET" })
+  .inputValidator((d: { id: string }) => z.object({ id: z.string() }).parse(d))
+  .handler(async ({ data }): Promise<{ cast: CreditPerson[]; crew: CreditPerson[] }> => {
+    try {
+      const res = await tmdb<{
+        cast?: { id: number; name: string; character?: string; profile_path?: string | null; order?: number }[];
+        crew?: { id: number; name: string; job?: string; department?: string; profile_path?: string | null }[];
+      }>(`/movie/${data.id}/credits`);
+      const cast: CreditPerson[] = (res.cast ?? []).slice(0, 24).map((c) => ({
+        id: `cast-${c.id}-${c.character ?? ""}`,
+        name: c.name,
+        role: c.character || "Cast",
+        profileUrl: c.profile_path ? `${IMG}/w185${c.profile_path}` : null,
+      }));
+      const KEY_JOBS = [
+        "Director", "Producer", "Executive Producer", "Screenplay", "Writer", "Story",
+        "Original Music Composer", "Director of Photography", "Editor", "Production Design",
+        "Costume Design",
+      ];
+      const seen = new Set<string>();
+      const crew: CreditPerson[] = (res.crew ?? [])
+        .filter((c) => c.job && KEY_JOBS.includes(c.job))
+        .sort((a, b) => KEY_JOBS.indexOf(a.job!) - KEY_JOBS.indexOf(b.job!))
+        .filter((c) => {
+          const k = `${c.id}-${c.job}`;
+          if (seen.has(k)) return false;
+          seen.add(k);
+          return true;
+        })
+        .slice(0, 18)
+        .map((c) => ({
+          id: `crew-${c.id}-${c.job}`,
+          name: c.name,
+          role: c.job || c.department || "Crew",
+          profileUrl: c.profile_path ? `${IMG}/w185${c.profile_path}` : null,
+        }));
+      return { cast, crew };
+    } catch {
+      return { cast: [], crew: [] };
+    }
+  });
