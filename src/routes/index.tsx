@@ -121,9 +121,10 @@ function HomePage() {
                 transition={{ duration: 0.35, delay: (i % 8) * 0.03 }}
               >
                 <Link
-                  to="/search"
-                  search={{ q: "", genre: g, year: "", min: 0, sort: "popularity" }}
-                  className="group relative flex h-28 items-end overflow-hidden rounded-2xl border border-white/10 p-4 transition-all duration-300 hover:-translate-y-1 hover:border-brand/50 hover:shadow-[var(--shadow-glow)]"
+                  to="/genre/$genre"
+                  params={{ genre: genreSlug(g) }}
+                  aria-label={`Browse all ${g} movies, newest first`}
+                  className="group relative flex h-28 items-end overflow-hidden rounded-2xl border border-white/10 p-4 transition-all duration-300 hover:-translate-y-1 hover:border-brand/50 hover:shadow-[var(--shadow-glow)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                   style={{
                     background: `linear-gradient(135deg, hsl(${(i * 37) % 360} 65% 26%), hsl(${(i * 37 + 60) % 360} 55% 10%))`,
                   }}
