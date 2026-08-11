@@ -7,7 +7,7 @@ import { MovieRow } from "@/components/MovieRow";
 import { useUserStore } from "@/store/user";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
-import { getMovieDetails, getSimilar } from "@/lib/tmdb.functions";
+import { getMovieDetails, getSimilar, getMovieCredits, type CreditPerson } from "@/lib/tmdb.functions";
 import { getSemanticSimilar } from "@/lib/semantic.functions";
 
 const detailsOpts = (id: string) => queryOptions({
@@ -144,6 +144,11 @@ function MoviePage() {
     queryFn: () => getSemanticSimilar({ data: { id, limit: 12 } }),
     staleTime: 60 * 60_000,
   });
+  const { data: credits } = useQuery({
+    queryKey: ["tmdb", "credits", id],
+    queryFn: () => getMovieCredits({ data: { id } }),
+    staleTime: 6 * 60 * 60_000,
+  });
   const { play } = Route.useSearch();
   const [playing, setPlaying] = useState(Boolean(play));
   const liked = useUserStore((s) => s.likes.includes(id));
@@ -183,7 +188,7 @@ function MoviePage() {
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-background/40" />
         <Link
           to="/"
-          className="absolute left-4 top-24 inline-flex items-center gap-2 rounded-full glass px-3 py-1.5 text-sm text-foreground hover:bg-accent md:top-20"
+          className="absolute left-4 top-24 inline-flex min-h-11 items-center gap-2 rounded-full glass px-3 py-1.5 text-sm text-foreground hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background md:top-20"
         >
           <ArrowLeft className="h-4 w-4" /> Back
         </Link>
@@ -221,7 +226,7 @@ function MoviePage() {
             {movie.trailerYoutubeId && (
               <button
                 onClick={() => setPlaying(true)}
-                className="inline-flex items-center gap-2 rounded-md bg-foreground px-4 py-2.5 text-sm font-semibold text-background hover:bg-foreground/90"
+                className="inline-flex min-h-11 items-center gap-2 rounded-md bg-foreground px-4 py-2.5 text-sm font-semibold text-background hover:bg-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
               >
                 <Play className="h-4 w-4 fill-current" /> Play trailer
               </button>
@@ -229,7 +234,7 @@ function MoviePage() {
             <button
               onClick={() => toggleWatchlist(movie.id)}
               className={cn(
-                "inline-flex items-center gap-2 rounded-md border px-4 py-2.5 text-sm font-semibold transition",
+                "inline-flex min-h-11 items-center gap-2 rounded-md border px-4 py-2.5 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
                 inList ? "border-brand bg-brand text-brand-foreground" : "border-border hover:border-brand hover:text-brand",
               )}
             >
@@ -237,9 +242,9 @@ function MoviePage() {
             </button>
             <button
               onClick={() => toggleLike(movie.id)}
-              aria-label="Like"
+              aria-label={liked ? "Remove like" : "Like this movie"} aria-pressed={liked}
               className={cn(
-                "inline-flex items-center gap-2 rounded-md border px-4 py-2.5 text-sm transition",
+                "inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-md border px-4 py-2.5 text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
                 liked ? "border-green-500/60 text-green-400" : "border-border hover:border-foreground",
               )}
             >
@@ -247,9 +252,9 @@ function MoviePage() {
             </button>
             <button
               onClick={() => toggleDislike(movie.id)}
-              aria-label="Dislike"
+              aria-label={disliked ? "Remove dislike" : "Dislike this movie"} aria-pressed={disliked}
               className={cn(
-                "inline-flex items-center gap-2 rounded-md border px-4 py-2.5 text-sm transition",
+                "inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-md border px-4 py-2.5 text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
                 disliked ? "border-destructive/60 text-destructive" : "border-border hover:border-foreground",
               )}
             >
@@ -264,9 +269,9 @@ function MoviePage() {
                 <button
                   key={n}
                   onClick={() => rate(movie.id, n)}
-                  aria-label={`Rate ${n}/10`}
+                  aria-label={`Rate ${n} out of 10`} aria-pressed={(userRating ?? 0) === n}
                   className={cn(
-                    "h-8 w-7 rounded-md text-xs font-semibold transition",
+                    "h-11 w-8 rounded-md text-xs font-semibold transition sm:h-9 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
                     (userRating ?? 0) >= n ? "bg-brand text-brand-foreground" : "bg-secondary text-muted-foreground hover:bg-accent",
                   )}
                 >
@@ -312,6 +317,13 @@ function MoviePage() {
         </div>
       )}
 
+      {(credits?.cast?.length || credits?.crew?.length) ? (
+        <div className="container mx-auto mt-16 px-4">
+          <PeopleSection title="Top Cast" people={credits?.cast ?? []} />
+          <PeopleSection title="Crew" people={credits?.crew ?? []} />
+        </div>
+      ) : null}
+
       <div className="mt-16">
         {semantic.length > 0 && (
           <MovieRow
@@ -324,3 +336,36 @@ function MoviePage() {
     </article>
   );
 }
+
+function PeopleSection({ title, people }: { title: string; people: CreditPerson[] }) {
+  if (people.length === 0) return null;
+  return (
+    <section className="mt-10 first:mt-0" aria-label={title}>
+      <h2 className="text-gradient font-display text-2xl tracking-wide sm:text-3xl">{title}</h2>
+      <div className="accent-rule mt-2" />
+      <ul className="mt-5 grid grid-cols-3 gap-4 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8">
+        {people.map((p) => (
+          <li key={p.id} className="min-w-0">
+            <div className="aspect-[2/3] overflow-hidden rounded-xl bg-secondary ring-1 ring-white/5">
+              {p.profileUrl ? (
+                <img
+                  src={p.profileUrl}
+                  alt={`${p.name}, ${p.role}`}
+                  loading="lazy"
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <div aria-hidden className="grid h-full w-full place-items-center font-display text-2xl text-muted-foreground">
+                  {p.name.slice(0, 1)}
+                </div>
+              )}
+            </div>
+            <p className="mt-2 line-clamp-2 text-sm font-semibold leading-tight text-foreground">{p.name}</p>
+            <p className="line-clamp-2 text-xs text-muted-foreground">{p.role}</p>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+

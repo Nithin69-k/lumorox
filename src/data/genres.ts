@@ -31,3 +31,8 @@ export const MOODS = [
 ] as const;
 
 export type MoodId = (typeof MOODS)[number]["id"];
+
+export const genreSlug = (g: string) => g.toLowerCase().replace(/\s+/g, "-");
+
+export const genreFromSlug = (slug: string): Genre | undefined =>
+  GENRES.find((g) => genreSlug(g) === slug.toLowerCase());
