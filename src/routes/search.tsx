@@ -84,7 +84,7 @@ function SearchPage() {
     navigate({ search: (prev: z.infer<typeof searchSchema>) => ({ ...prev, ...patch }), replace: true });
 
   return (
-    <div className="container mx-auto px-4 py-6">
+    <main className="container mx-auto px-4 py-6">
       <h1 className="font-display text-4xl tracking-tight sm:text-5xl">Search the cinematic universe</h1>
       <p className="mt-2 text-sm text-muted-foreground">Powered by TMDB — search millions of titles, filter by genre, year, and rating.</p>
 
@@ -96,14 +96,14 @@ function SearchPage() {
             onChange={(e) => setInput(e.target.value)}
             placeholder="Search titles, actors, directors, keywords…"
             aria-label="Search movies"
-            className="h-14 w-full rounded-2xl border border-border bg-surface pl-12 pr-12 text-base text-foreground outline-none placeholder:text-muted-foreground focus:border-brand"
+            className="h-14 w-full rounded-2xl border border-border bg-surface pl-12 pr-14 text-base text-foreground outline-none placeholder:text-muted-foreground focus:border-brand focus-visible:ring-2 focus-visible:ring-ring"
           />
           {input && (
             <button
               type="button"
               onClick={() => setInput("")}
               aria-label="Clear search"
-              className="absolute right-3 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-full text-muted-foreground hover:bg-accent"
+              className="absolute right-3 top-1/2 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full text-muted-foreground hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             >
               <X className="h-4 w-4" />
             </button>
@@ -114,26 +114,26 @@ function SearchPage() {
             type="button"
             onClick={startVoice}
             aria-label={listening ? "Listening..." : "Voice search"}
-            className={`grid h-14 w-14 place-items-center rounded-2xl border transition ${listening ? "border-brand bg-brand text-brand-foreground animate-pulse" : "border-border hover:border-brand"}`}
+            className={`grid h-14 w-14 place-items-center rounded-2xl border transition ${listening ? "border-brand bg-brand text-brand-foreground animate-pulse" : "border-border hover:border-brand"} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background`}
           >
-            {listening ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
+            {listening ? <MicOff aria-hidden className="h-5 w-5" /> : <Mic aria-hidden className="h-5 w-5" />}
           </button>
         )}
       </div>
 
       <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <select value={genre} onChange={(e) => setFilter({ genre: e.target.value })} aria-label="Genre" className="h-11 rounded-md border border-border bg-surface px-3 text-sm">
+        <select value={genre} onChange={(e) => setFilter({ genre: e.target.value })} aria-label="Genre" className="h-11 rounded-md border border-border bg-surface px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background">
           <option value="">All genres</option>
           {GENRES.map((g) => <option key={g} value={g}>{g}</option>)}
         </select>
-        <select value={year} onChange={(e) => setFilter({ year: e.target.value })} aria-label="Year" className="h-11 rounded-md border border-border bg-surface px-3 text-sm">
+        <select value={year} onChange={(e) => setFilter({ year: e.target.value })} aria-label="Year" className="h-11 rounded-md border border-border bg-surface px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background">
           <option value="">Any year</option>
           {YEARS.map((y) => <option key={y} value={y}>{y}</option>)}
         </select>
-        <select value={String(min)} onChange={(e) => setFilter({ min: Number(e.target.value) })} aria-label="Minimum rating" className="h-11 rounded-md border border-border bg-surface px-3 text-sm">
+        <select value={String(min)} onChange={(e) => setFilter({ min: Number(e.target.value) })} aria-label="Minimum rating" className="h-11 rounded-md border border-border bg-surface px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background">
           {[0, 5, 6, 7, 8, 9].map((n) => <option key={n} value={n}>{n === 0 ? "Any rating" : `${n}+ stars`}</option>)}
         </select>
-        <select value={sort} onChange={(e) => setFilter({ sort: e.target.value as z.infer<typeof searchSchema>["sort"] })} aria-label="Sort by" className="h-11 rounded-md border border-border bg-surface px-3 text-sm">
+        <select value={sort} onChange={(e) => setFilter({ sort: e.target.value as z.infer<typeof searchSchema>["sort"] })} aria-label="Sort by" className="h-11 rounded-md border border-border bg-surface px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background">
           <option value="popularity">Most popular</option>
           <option value="rating">Highest rated</option>
           <option value="year">Newest</option>
@@ -141,8 +141,8 @@ function SearchPage() {
         </select>
       </div>
 
-      <p className="mt-6 flex items-center gap-2 text-sm text-muted-foreground">
-        {isFetching && <Loader2 className="h-4 w-4 animate-spin" />}
+      <p aria-live="polite" className="mt-6 flex items-center gap-2 text-sm text-muted-foreground">
+        {isFetching && <Loader2 aria-hidden className="h-4 w-4 animate-spin" />}
         {results.length} {results.length === 1 ? "result" : "results"}
       </p>
 
@@ -163,6 +163,6 @@ function SearchPage() {
           <p className="mt-2 text-sm text-muted-foreground">Try a different keyword, or clear your filters.</p>
         </div>
       )}
-    </div>
+    </main>
   );
 }
