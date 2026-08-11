@@ -7,7 +7,7 @@ import { MovieRow } from "@/components/MovieRow";
 import { useUserStore } from "@/store/user";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
-import { getMovieDetails, getSimilar } from "@/lib/tmdb.functions";
+import { getMovieDetails, getSimilar, getMovieCredits, type CreditPerson } from "@/lib/tmdb.functions";
 import { getSemanticSimilar } from "@/lib/semantic.functions";
 
 const detailsOpts = (id: string) => queryOptions({
