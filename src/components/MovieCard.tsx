@@ -55,22 +55,8 @@ export function MovieCard({ movie, index = 0, className, reason, rank }: Props) 
             <span className="sr-only">Rating </span>
             {movie.rating.toFixed(1)}
           </div>
-          <button
-            type="button"
-            aria-pressed={inWatchlist}
-            aria-label={
-              inWatchlist
-                ? `Remove ${movie.title} from watchlist`
-                : `Add ${movie.title} to watchlist`
-            }
-            onClick={(e) => {
-              e.preventDefault();
-              toggle(movie.id);
-            }}
-            className="absolute right-2 top-2 grid h-11 w-11 translate-y-1 place-items-center rounded-full border border-white/10 bg-black/55 text-white opacity-0 backdrop-blur transition-all hover:bg-brand group-hover:translate-y-0 group-hover:opacity-100 focus:translate-y-0 focus:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:h-8 sm:w-8 [@media(hover:none)]:translate-y-0 [@media(hover:none)]:opacity-100"
-          >
-            {inWatchlist ? <Check aria-hidden className="h-4 w-4" /> : <Plus aria-hidden className="h-4 w-4" />}
-          </button>
+
+
           <div aria-hidden className="pointer-events-none absolute inset-x-2 bottom-2 translate-y-2 opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:translate-y-0 group-focus-within:opacity-100">
             <span className="inline-flex items-center gap-1 rounded-full bg-brand/90 px-2.5 py-1 text-[11px] font-semibold text-brand-foreground shadow-[var(--shadow-glow)]">
               <Play className="h-3 w-3 fill-current" /> Watch trailer
