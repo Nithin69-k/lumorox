@@ -19,6 +19,7 @@ import { Route as RobotsDottxtRouteImport } from './routes/robots[.]txt'
 import { Route as SearchRouteImport } from './routes/search'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as WatchlistRouteImport } from './routes/watchlist'
+import { Route as GenreGenreRouteImport } from './routes/genre.$genre'
 import { Route as MovieIdRouteImport } from './routes/movie.$id'
 import { Route as ApiPublicHooksRefreshCatalogRouteImport } from './routes/api/public/hooks/refresh-catalog'
 
@@ -72,6 +73,11 @@ const WatchlistRoute = WatchlistRouteImport.update({
   path: '/watchlist',
   getParentRoute: () => rootRouteImport,
 } as any)
+const GenreGenreRoute = GenreGenreRouteImport.update({
+  id: '/genre/$genre',
+  path: '/genre/$genre',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MovieIdRoute = MovieIdRouteImport.update({
   id: '/movie/$id',
   path: '/movie/$id',
@@ -95,6 +101,7 @@ export interface FileRoutesByFullPath {
   '/search': typeof SearchRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/watchlist': typeof WatchlistRoute
+  '/genre/$genre': typeof GenreGenreRoute
   '/movie/$id': typeof MovieIdRoute
   '/api/public/hooks/refresh-catalog': typeof ApiPublicHooksRefreshCatalogRoute
 }
@@ -109,6 +116,7 @@ export interface FileRoutesByTo {
   '/search': typeof SearchRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/watchlist': typeof WatchlistRoute
+  '/genre/$genre': typeof GenreGenreRoute
   '/movie/$id': typeof MovieIdRoute
   '/api/public/hooks/refresh-catalog': typeof ApiPublicHooksRefreshCatalogRoute
 }
@@ -124,6 +132,7 @@ export interface FileRoutesById {
   '/search': typeof SearchRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/watchlist': typeof WatchlistRoute
+  '/genre/$genre': typeof GenreGenreRoute
   '/movie/$id': typeof MovieIdRoute
   '/api/public/hooks/refresh-catalog': typeof ApiPublicHooksRefreshCatalogRoute
 }
@@ -140,6 +149,7 @@ export interface FileRouteTypes {
     | '/search'
     | '/sitemap.xml'
     | '/watchlist'
+    | '/genre/$genre'
     | '/movie/$id'
     | '/api/public/hooks/refresh-catalog'
   fileRoutesByTo: FileRoutesByTo
@@ -154,6 +164,7 @@ export interface FileRouteTypes {
     | '/search'
     | '/sitemap.xml'
     | '/watchlist'
+    | '/genre/$genre'
     | '/movie/$id'
     | '/api/public/hooks/refresh-catalog'
   id:
@@ -168,6 +179,7 @@ export interface FileRouteTypes {
     | '/search'
     | '/sitemap.xml'
     | '/watchlist'
+    | '/genre/$genre'
     | '/movie/$id'
     | '/api/public/hooks/refresh-catalog'
   fileRoutesById: FileRoutesById
@@ -183,6 +195,7 @@ export interface RootRouteChildren {
   SearchRoute: typeof SearchRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   WatchlistRoute: typeof WatchlistRoute
+  GenreGenreRoute: typeof GenreGenreRoute
   MovieIdRoute: typeof MovieIdRoute
   ApiPublicHooksRefreshCatalogRoute: typeof ApiPublicHooksRefreshCatalogRoute
 }
@@ -259,6 +272,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WatchlistRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/genre/$genre': {
+      id: '/genre/$genre'
+      path: '/genre/$genre'
+      fullPath: '/genre/$genre'
+      preLoaderRoute: typeof GenreGenreRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/movie/$id': {
       id: '/movie/$id'
       path: '/movie/$id'
@@ -287,19 +307,10 @@ const rootRouteChildren: RootRouteChildren = {
   SearchRoute: SearchRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   WatchlistRoute: WatchlistRoute,
+  GenreGenreRoute: GenreGenreRoute,
   MovieIdRoute: MovieIdRoute,
   ApiPublicHooksRefreshCatalogRoute: ApiPublicHooksRefreshCatalogRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
