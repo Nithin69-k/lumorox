@@ -317,6 +317,13 @@ function MoviePage() {
         </div>
       )}
 
+      {(credits?.cast?.length || credits?.crew?.length) ? (
+        <div className="container mx-auto mt-16 px-4">
+          <PeopleSection title="Top Cast" people={credits?.cast ?? []} />
+          <PeopleSection title="Crew" people={credits?.crew ?? []} />
+        </div>
+      ) : null}
+
       <div className="mt-16">
         {semantic.length > 0 && (
           <MovieRow
@@ -329,3 +336,36 @@ function MoviePage() {
     </article>
   );
 }
+
+function PeopleSection({ title, people }: { title: string; people: CreditPerson[] }) {
+  if (people.length === 0) return null;
+  return (
+    <section className="mt-10 first:mt-0" aria-label={title}>
+      <h2 className="text-gradient font-display text-2xl tracking-wide sm:text-3xl">{title}</h2>
+      <div className="accent-rule mt-2" />
+      <ul className="mt-5 grid grid-cols-3 gap-4 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8">
+        {people.map((p) => (
+          <li key={p.id} className="min-w-0">
+            <div className="aspect-[2/3] overflow-hidden rounded-xl bg-secondary ring-1 ring-white/5">
+              {p.profileUrl ? (
+                <img
+                  src={p.profileUrl}
+                  alt={`${p.name}, ${p.role}`}
+                  loading="lazy"
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <div aria-hidden className="grid h-full w-full place-items-center font-display text-2xl text-muted-foreground">
+                  {p.name.slice(0, 1)}
+                </div>
+              )}
+            </div>
+            <p className="mt-2 line-clamp-2 text-sm font-semibold leading-tight text-foreground">{p.name}</p>
+            <p className="line-clamp-2 text-xs text-muted-foreground">{p.role}</p>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
