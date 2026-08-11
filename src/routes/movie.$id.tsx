@@ -188,7 +188,7 @@ function MoviePage() {
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-background/40" />
         <Link
           to="/"
-          className="absolute left-4 top-24 inline-flex items-center gap-2 rounded-full glass px-3 py-1.5 text-sm text-foreground hover:bg-accent md:top-20"
+          className="absolute left-4 top-24 inline-flex min-h-11 items-center gap-2 rounded-full glass px-3 py-1.5 text-sm text-foreground hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background md:top-20"
         >
           <ArrowLeft className="h-4 w-4" /> Back
         </Link>
@@ -226,7 +226,7 @@ function MoviePage() {
             {movie.trailerYoutubeId && (
               <button
                 onClick={() => setPlaying(true)}
-                className="inline-flex items-center gap-2 rounded-md bg-foreground px-4 py-2.5 text-sm font-semibold text-background hover:bg-foreground/90"
+                className="inline-flex min-h-11 items-center gap-2 rounded-md bg-foreground px-4 py-2.5 text-sm font-semibold text-background hover:bg-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
               >
                 <Play className="h-4 w-4 fill-current" /> Play trailer
               </button>
@@ -234,7 +234,7 @@ function MoviePage() {
             <button
               onClick={() => toggleWatchlist(movie.id)}
               className={cn(
-                "inline-flex items-center gap-2 rounded-md border px-4 py-2.5 text-sm font-semibold transition",
+                "inline-flex min-h-11 items-center gap-2 rounded-md border px-4 py-2.5 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
                 inList ? "border-brand bg-brand text-brand-foreground" : "border-border hover:border-brand hover:text-brand",
               )}
             >
@@ -242,9 +242,9 @@ function MoviePage() {
             </button>
             <button
               onClick={() => toggleLike(movie.id)}
-              aria-label="Like"
+              aria-label={liked ? "Remove like" : "Like this movie"} aria-pressed={liked}
               className={cn(
-                "inline-flex items-center gap-2 rounded-md border px-4 py-2.5 text-sm transition",
+                "inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-md border px-4 py-2.5 text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
                 liked ? "border-green-500/60 text-green-400" : "border-border hover:border-foreground",
               )}
             >
@@ -252,9 +252,9 @@ function MoviePage() {
             </button>
             <button
               onClick={() => toggleDislike(movie.id)}
-              aria-label="Dislike"
+              aria-label={disliked ? "Remove dislike" : "Dislike this movie"} aria-pressed={disliked}
               className={cn(
-                "inline-flex items-center gap-2 rounded-md border px-4 py-2.5 text-sm transition",
+                "inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-md border px-4 py-2.5 text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
                 disliked ? "border-destructive/60 text-destructive" : "border-border hover:border-foreground",
               )}
             >
@@ -269,9 +269,9 @@ function MoviePage() {
                 <button
                   key={n}
                   onClick={() => rate(movie.id, n)}
-                  aria-label={`Rate ${n}/10`}
+                  aria-label={`Rate ${n} out of 10`} aria-pressed={(userRating ?? 0) === n}
                   className={cn(
-                    "h-8 w-7 rounded-md text-xs font-semibold transition",
+                    "h-11 w-8 rounded-md text-xs font-semibold transition sm:h-9 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
                     (userRating ?? 0) >= n ? "bg-brand text-brand-foreground" : "bg-secondary text-muted-foreground hover:bg-accent",
                   )}
                 >
