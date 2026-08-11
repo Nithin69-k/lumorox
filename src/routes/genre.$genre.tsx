@@ -56,7 +56,7 @@ function GenrePage() {
   const movies = data?.pages.flatMap((p) => p.movies) ?? [];
 
   return (
-    <main className="container mx-auto px-4 py-6">
+    <div className="container mx-auto px-4 py-6">
       <Link
         to="/"
         className="inline-flex items-center gap-2 rounded-full glass px-3 py-1.5 text-sm text-foreground transition hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
@@ -106,6 +106,6 @@ function GenrePage() {
           )
         )}
       </div>
-    </main>
+    </div>
   );
 }

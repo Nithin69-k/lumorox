@@ -84,7 +84,7 @@ function SearchPage() {
     navigate({ search: (prev: z.infer<typeof searchSchema>) => ({ ...prev, ...patch }), replace: true });
 
   return (
-    <main className="container mx-auto px-4 py-6">
+    <div className="container mx-auto px-4 py-6">
       <h1 className="font-display text-4xl tracking-tight sm:text-5xl">Search the cinematic universe</h1>
       <p className="mt-2 text-sm text-muted-foreground">Powered by TMDB — search millions of titles, filter by genre, year, and rating.</p>
 
@@ -163,6 +163,6 @@ function SearchPage() {
           <p className="mt-2 text-sm text-muted-foreground">Try a different keyword, or clear your filters.</p>
         </div>
       )}
-    </main>
+    </div>
   );
 }
