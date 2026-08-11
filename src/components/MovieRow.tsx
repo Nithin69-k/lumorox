@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useId, useRef } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { Movie } from "@/data/movies";
 import { MovieCard } from "./MovieCard";
@@ -14,11 +14,23 @@ interface Props {
 }
 
 export function MovieRow({ title, movies, emptyHint, ranked, subtitle }: Props) {
-  const ref = useRef<HTMLDivElement>(null);
+  const ref = useRef<HTMLUListElement>(null);
+  const uid = useId();
+  const headingId = `row-heading-${uid}`;
+  const listId = `row-list-${uid}`;
   const scroll = (dir: 1 | -1) => {
     const el = ref.current;
     if (!el) return;
     el.scrollBy({ left: dir * Math.min(el.clientWidth * 0.9, 900), behavior: "smooth" });
+  };
+  const onKeyDown = (e: React.KeyboardEvent<HTMLUListElement>) => {
+    if (e.key === "ArrowRight") {
+      e.preventDefault();
+      scroll(1);
+    } else if (e.key === "ArrowLeft") {
+      e.preventDefault();
+      scroll(-1);
+    }
   };
 
   if (movies.length === 0 && emptyHint) {
@@ -29,6 +41,7 @@ export function MovieRow({ title, movies, emptyHint, ranked, subtitle }: Props) 
       </section>
     );
   }
+
 
   return (
     <section className="relative py-6 sm:py-7" aria-labelledby={headingId}>
