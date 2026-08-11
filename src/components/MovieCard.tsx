@@ -76,9 +76,20 @@ export function MovieCard({ movie, index = 0, className, reason, rank }: Props) 
             </p>
           )}
         </div>
-
       </Link>
+      <button
+        type="button"
+        aria-pressed={inWatchlist}
+        aria-label={
+          inWatchlist ? `Remove ${movie.title} from watchlist` : `Add ${movie.title} to watchlist`
+        }
+        onClick={() => toggle(movie.id)}
+        className="absolute right-2 top-2 z-20 grid h-11 w-11 place-items-center rounded-full border border-white/10 bg-black/55 text-white opacity-100 backdrop-blur transition-all hover:bg-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:h-9 sm:w-9 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 sm:focus-visible:opacity-100"
+      >
+        {inWatchlist ? <Check aria-hidden className="h-4 w-4" /> : <Plus aria-hidden className="h-4 w-4" />}
+      </button>
     </motion.div>
+
   );
 }
 
