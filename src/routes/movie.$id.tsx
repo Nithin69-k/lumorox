@@ -7,7 +7,8 @@ import { MovieRow } from "@/components/MovieRow";
 import { useUserStore } from "@/store/user";
 import { useState, useEffect, useRef, useMemo } from "react";
 import { cn } from "@/lib/utils";
-import { getMovieDetails, getSimilar, getMovieCredits, type CreditPerson } from "@/lib/tmdb.functions";
+import { getMovieDetails, getSimilar, getMovieCredits, getByGenre, type CreditPerson } from "@/lib/tmdb.functions";
+import type { Movie } from "@/data/movies";
 import { getSemanticSimilar } from "@/lib/semantic.functions";
 
 const detailsOpts = (id: string) => queryOptions({
@@ -441,8 +442,8 @@ function BecauseYouWatched({ movie, pool }: { movie: Movie; pool: Movie[] }) {
         return true;
       })
       .map((c) => {
-        const genreScore = c.genres.reduce((s, g) => s + (affinity.get(g) ?? 0), 0);
-        const shared = c.genres.filter((g) => movie.genres.includes(g)).length;
+        const genreScore = c.genres.reduce((sum: number, g: string) => sum + (affinity.get(g) ?? 0), 0);
+        const shared = c.genres.filter((g: string) => (movie.genres as string[]).includes(g)).length;
         const inPool = pool.some((p) => p.id === c.id) ? 1.2 : 0;
         const saved = watchlist.includes(c.id) ? -2 : 0; // already saved -> deprioritise
         return { c, score: genreScore * 0.6 + shared * 1.4 + c.rating * 0.25 + inPool + saved };
