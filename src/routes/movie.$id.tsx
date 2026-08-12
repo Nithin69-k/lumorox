@@ -1,13 +1,14 @@
 import { createFileRoute, notFound, Link } from "@tanstack/react-router";
 import { queryOptions, useSuspenseQuery, useQuery } from "@tanstack/react-query";
-import { Star, Clock, Calendar, ArrowLeft, Heart, ThumbsUp, ThumbsDown, Play } from "lucide-react";
+import { Star, Clock, Calendar, ArrowLeft, Heart, ThumbsUp, ThumbsDown, Play, X } from "lucide-react";
 import { motion } from "framer-motion";
 import { MoviePoster } from "@/components/MoviePoster";
 import { MovieRow } from "@/components/MovieRow";
 import { useUserStore } from "@/store/user";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { cn } from "@/lib/utils";
-import { getMovieDetails, getSimilar, getMovieCredits, type CreditPerson } from "@/lib/tmdb.functions";
+import { getMovieDetails, getSimilar, getMovieCredits, getByGenre, type CreditPerson } from "@/lib/tmdb.functions";
+import type { Movie } from "@/data/movies";
 import { getSemanticSimilar } from "@/lib/semantic.functions";
 
 const detailsOpts = (id: string) => queryOptions({
@@ -160,19 +161,59 @@ function MoviePage() {
   const toggleWatchlist = useUserStore((s) => s.toggleWatchlist);
   const rate = useUserStore((s) => s.rate);
 
+  // Focus management for the trailer dialog: trap Tab inside it while open and
+  // return focus to the trigger when it closes, so keyboard users never get lost.
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLElement | null>(null);
+  const closeTrailer = () => setPlaying(false);
+
   useEffect(() => {
-    if (!playing) return;
+    if (!playing) {
+      const t = triggerRef.current;
+      triggerRef.current = null;
+      t?.focus();
+      return;
+    }
+    triggerRef.current = (document.activeElement as HTMLElement | null) ?? null;
+    const focusables = () =>
+      Array.from(
+        dialogRef.current?.querySelectorAll<HTMLElement>(
+          'button, [href], iframe, input, select, textarea, [tabindex]:not([tabindex="-1"])',
+        ) ?? [],
+      ).filter((el) => !el.hasAttribute("disabled"));
+
+    const raf = requestAnimationFrame(() => focusables()[0]?.focus());
+
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setPlaying(false);
+      if (e.key === "Escape") {
+        e.preventDefault();
+        setPlaying(false);
+        return;
+      }
+      if (e.key !== "Tab") return;
+      const items = focusables();
+      if (items.length === 0) return;
+      const first = items[0]!;
+      const last = items[items.length - 1]!;
+      const active = document.activeElement as HTMLElement | null;
+      if (e.shiftKey && (active === first || !dialogRef.current?.contains(active))) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && active === last) {
+        e.preventDefault();
+        first.focus();
+      }
     };
-    document.addEventListener("keydown", onKey);
+    document.addEventListener("keydown", onKey, true);
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
-      document.removeEventListener("keydown", onKey);
+      cancelAnimationFrame(raf);
+      document.removeEventListener("keydown", onKey, true);
       document.body.style.overflow = prev;
     };
   }, [playing]);
+
 
 
   if (!movie) return null;
@@ -300,19 +341,32 @@ function MoviePage() {
 
       {playing && movie.trailerYoutubeId && (
         <div
+          ref={dialogRef}
           className="fixed inset-0 z-[60] grid place-items-center bg-black/85 p-4 backdrop-blur"
-          onClick={() => setPlaying(false)}
+          onClick={closeTrailer}
           role="dialog"
-          aria-label="Trailer"
+          aria-modal="true"
+          aria-label={`${movie.title} trailer`}
         >
-          <div className="aspect-video w-full max-w-5xl" onClick={(e) => e.stopPropagation()}>
-            <iframe
-              src={`https://www.youtube.com/embed/${movie.trailerYoutubeId}?autoplay=1`}
-              title={`${movie.title} trailer`}
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-              className="h-full w-full rounded-lg"
-            />
+          <div className="w-full max-w-5xl" onClick={(e) => e.stopPropagation()}>
+            <div className="mb-3 flex justify-end">
+              <button
+                type="button"
+                onClick={closeTrailer}
+                className="inline-flex min-h-11 items-center gap-2 rounded-full glass px-4 text-sm font-semibold text-foreground hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+              >
+                <X aria-hidden className="h-4 w-4" /> Close trailer
+              </button>
+            </div>
+            <div className="aspect-video w-full">
+              <iframe
+                src={`https://www.youtube.com/embed/${movie.trailerYoutubeId}?autoplay=1`}
+                title={`${movie.title} trailer`}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                className="h-full w-full rounded-lg"
+              />
+            </div>
           </div>
         </div>
       )}
@@ -325,6 +379,7 @@ function MoviePage() {
       ) : null}
 
       <div className="mt-16">
+        <BecauseYouWatched movie={movie} pool={[...similar, ...semantic.map((s) => s.movie)]} />
         {semantic.length > 0 && (
           <MovieRow
             title="Semantically Similar (AI)"
@@ -333,11 +388,91 @@ function MoviePage() {
         )}
         <MovieRow title="More Like This" movies={similar} emptyHint="No similar titles yet." />
       </div>
+
     </article>
   );
 }
 
+/**
+ * Personalized "Because you watched …" row: blends this title's genre context
+ * with the viewer's watchlist, likes and ratings to re-rank a candidate pool.
+ */
+function BecauseYouWatched({ movie, pool }: { movie: Movie; pool: Movie[] }) {
+  const watchlist = useUserStore((s) => s.watchlist);
+  const likes = useUserStore((s) => s.likes);
+  const dislikes = useUserStore((s) => s.dislikes);
+  const ratings = useUserStore((s) => s.ratings);
+
+  const primary = movie.genres[0];
+  const secondary = movie.genres[1];
+  const { data: g1 = [] } = useQuery({
+    queryKey: ["tmdb", "genre", primary],
+    queryFn: () => getByGenre({ data: { genre: primary as string } }),
+    enabled: Boolean(primary),
+    staleTime: 30 * 60_000,
+  });
+  const { data: g2 = [] } = useQuery({
+    queryKey: ["tmdb", "genre", secondary],
+    queryFn: () => getByGenre({ data: { genre: secondary as string } }),
+    enabled: Boolean(secondary),
+    staleTime: 30 * 60_000,
+  });
+
+  const picks = useMemo(() => {
+    // Genres the viewer keeps saving / liking / rating highly.
+    const affinity = new Map<string, number>();
+    const seedIds = new Set<string>([
+      ...watchlist,
+      ...likes,
+      ...Object.entries(ratings).filter(([, r]) => r >= 7).map(([id]) => id),
+    ]);
+    const candidates = [...pool, ...g1, ...g2];
+    for (const c of candidates) {
+      if (!seedIds.has(c.id)) continue;
+      for (const g of c.genres) affinity.set(g, (affinity.get(g) ?? 0) + 1);
+    }
+    for (const g of movie.genres) affinity.set(g, (affinity.get(g) ?? 0) + 1.5);
+
+    const blocked = new Set<string>([movie.id, ...dislikes]);
+    const seen = new Set<string>();
+    const scored = candidates
+      .filter((c) => {
+        if (blocked.has(c.id) || seen.has(c.id)) return false;
+        seen.add(c.id);
+        return true;
+      })
+      .map((c) => {
+        const genreScore = c.genres.reduce((sum: number, g: string) => sum + (affinity.get(g) ?? 0), 0);
+        const shared = c.genres.filter((g: string) => (movie.genres as string[]).includes(g)).length;
+        const inPool = pool.some((p) => p.id === c.id) ? 1.2 : 0;
+        const saved = watchlist.includes(c.id) ? -2 : 0; // already saved -> deprioritise
+        return { c, score: genreScore * 0.6 + shared * 1.4 + c.rating * 0.25 + inPool + saved };
+      })
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 18)
+      .map((x) => x.c);
+    return scored;
+  }, [pool, g1, g2, movie, watchlist, likes, dislikes, ratings]);
+
+  if (picks.length === 0) return null;
+
+  const personalized = watchlist.length + likes.length + Object.keys(ratings).length > 0;
+
+  return (
+    <MovieRow
+      title={`Because you watched ${movie.title}`}
+      subtitle={
+        personalized
+          ? "Matched to this title's genres and your watchlist, likes and ratings"
+          : `Picked from ${movie.genres.slice(0, 2).join(" & ") || "similar"} titles you may enjoy next`
+      }
+      movies={picks}
+    />
+  );
+}
+
 function PeopleSection({ title, people }: { title: string; people: CreditPerson[] }) {
+
   if (people.length === 0) return null;
   return (
     <section className="mt-10 first:mt-0" aria-label={title}>

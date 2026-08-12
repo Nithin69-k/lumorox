@@ -43,7 +43,7 @@ export function MovieCard({ movie, index = 0, className, reason, rank }: Props) 
       <Link
         to="/movie/$id"
         params={{ id: movie.id }}
-        search={{}}
+        search={{ play: undefined }}
         aria-label={`${movie.title} (${movie.year}), rated ${movie.rating.toFixed(1)} out of 10 — view details and trailer`}
         className="block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
       >

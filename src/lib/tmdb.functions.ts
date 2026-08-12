@@ -97,17 +97,38 @@ interface TmdbListItem {
   genre_ids?: number[];
 }
 
-function normalizeList(items: TmdbListItem[]): Movie[] {
+// TV genre ids differ from movie ids; map them onto our shared genre names.
+const TV_GENRE_BY_ID: Record<number, Genre> = {
+  10759: "Action", 16: "Animation", 35: "Comedy", 80: "Crime", 18: "Drama",
+  10751: "Family", 10762: "Family", 9648: "Mystery", 10765: "Science Fiction",
+  10768: "War", 37: "Western",
+};
+
+// Movie genre name -> the closest TV genre id (undefined when TV has no match).
+const TV_GENRE_ID_FOR: Record<string, number | undefined> = {
+  Action: 10759, Adventure: 10759, Animation: 16, Comedy: 35, Crime: 80,
+  Drama: 18, Family: 10751, Fantasy: 10765, History: undefined, Horror: undefined,
+  Mystery: 9648, Romance: undefined, "Science Fiction": 10765, Thriller: undefined,
+  War: 10768, Western: 37,
+};
+
+/** TV entries are stored with a `tv-` id prefix so detail routes can tell them apart. */
+export const isTvId = (id: string) => id.startsWith("tv-");
+const rawId = (id: string) => (id.startsWith("tv-") ? id.slice(3) : id);
+
+function normalizeList(items: TmdbListItem[], kind: "movie" | "tv" = "movie"): Movie[] {
+
   return items
     .filter((it) => it.poster_path)
     .map((it): Movie => {
       const year = Number((it.release_date || it.first_air_date || "").slice(0, 4)) || 0;
       const genres = (it.genre_ids ?? [])
-        .map((g) => GENRE_BY_ID[g])
+        .map((g) => (kind === "tv" ? TV_GENRE_BY_ID[g] : GENRE_BY_ID[g]))
         .filter((g): g is Genre => Boolean(g));
       return {
-        id: String(it.id),
+        id: kind === "tv" ? `tv-${it.id}` : String(it.id),
         title: it.title || it.name || "Untitled",
+
         year,
         genres,
         rating: Math.round((it.vote_average ?? 0) * 10) / 10,
@@ -271,14 +292,20 @@ export const getMovieDetails = createServerFn({ method: "GET" })
   .inputValidator((d: { id: string }) => z.object({ id: z.string() }).parse(d))
   .handler(async ({ data }): Promise<Movie | null> => {
     try {
-      const it = await tmdb<TmdbDetails>(`/movie/${data.id}`, {
-        append_to_response: "credits,videos,keywords",
-      });
-      const year = Number((it.release_date || "").slice(0, 4)) || 0;
+      const tv = isTvId(data.id);
+      const it = await tmdb<TmdbDetails & { episode_run_time?: number[] }>(
+        `${tv ? "/tv" : "/movie"}/${rawId(data.id)}`,
+        { append_to_response: "credits,videos,keywords" },
+      );
+      const year = Number((it.release_date || it.first_air_date || "").slice(0, 4)) || 0;
+
       const genres = (it.genres ?? [])
         .map((g) => g.name as Genre)
         .filter((g): g is Genre => Boolean(g));
-      const director = it.credits?.crew?.find((c) => c.job === "Director")?.name || "";
+      const director =
+        it.credits?.crew?.find((c) => c.job === "Director")?.name ||
+        it.credits?.crew?.find((c) => c.job === "Executive Producer")?.name ||
+        "";
       const cast = (it.credits?.cast ?? []).slice(0, 8).map((c) => c.name);
       const keywords = (it.keywords?.keywords ?? []).slice(0, 8).map((k) => k.name);
       const videos = it.videos?.results ?? [];
@@ -287,12 +314,12 @@ export const getMovieDetails = createServerFn({ method: "GET" })
         videos.find((v) => v.site === "YouTube" && v.type === "Trailer") ||
         videos.find((v) => v.site === "YouTube");
       return {
-        id: String(it.id),
+        id: tv ? `tv-${it.id}` : String(it.id),
         title: it.title || it.name || "Untitled",
         year,
         genres,
         rating: Math.round((it.vote_average ?? 0) * 10) / 10,
-        runtime: it.runtime ?? 0,
+        runtime: it.runtime ?? it.episode_run_time?.[0] ?? 0,
         overview: it.overview || "",
         director,
         cast,
@@ -312,13 +339,17 @@ export const getSimilar = createServerFn({ method: "GET" })
   .inputValidator((d: { id: string }) => z.object({ id: z.string() }).parse(d))
   .handler(async ({ data }) => {
     try {
-      const res = await tmdb<{ results: TmdbListItem[] }>(`/movie/${data.id}/recommendations`);
-      const list = normalizeList(res.results);
+      const tv = isTvId(data.id);
+      const res = await tmdb<{ results: TmdbListItem[] }>(
+        `${tv ? "/tv" : "/movie"}/${rawId(data.id)}/recommendations`,
+      );
+      const list = normalizeList(res.results, tv ? "tv" : "movie");
       return list.length ? list : fbSimilar(data.id);
     } catch {
       return fbSimilar(data.id);
     }
   });
+
 
 // ============================================================================
 // Personalized recommendations (Phase 1 + 2): candidate pool from user seeds,
@@ -612,6 +643,10 @@ export const getByLanguage = createServerFn({ method: "GET" })
 // Genre browsing (newest → oldest, paginated) + full credits for detail pages.
 // ============================================================================
 
+/**
+ * Everything in a genre — movies AND TV series/shows — ordered newest → oldest.
+ * Paginated so the UI can offer a "Load more" button.
+ */
 export const getGenrePage = createServerFn({ method: "GET" })
   .inputValidator((d: { genre: string; page?: number }) =>
     z.object({ genre: z.string().min(1), page: z.number().int().min(1).max(500).optional() }).parse(d))
@@ -622,7 +657,9 @@ export const getGenrePage = createServerFn({ method: "GET" })
         const id = GENRE_NAME_TO_ID[data.genre];
         if (!id) return { movies: [] as Movie[], page, totalPages: 1 };
         const today = new Date().toISOString().slice(0, 10);
-        const res = await tmdb<{ results: TmdbListItem[]; total_pages?: number }>("/discover/movie", {
+        const tvId = TV_GENRE_ID_FOR[data.genre];
+
+        const moviePromise = tmdb<{ results: TmdbListItem[]; total_pages?: number }>("/discover/movie", {
           with_genres: id,
           sort_by: "primary_release_date.desc",
           "primary_release_date.lte": today,
@@ -630,11 +667,32 @@ export const getGenrePage = createServerFn({ method: "GET" })
           include_adult: "false",
           page,
         });
-        const movies = normalizeList(res.results).sort((a, b) => b.year - a.year);
+        const tvPromise = tvId
+          ? tmdb<{ results: TmdbListItem[]; total_pages?: number }>("/discover/tv", {
+              with_genres: tvId,
+              sort_by: "first_air_date.desc",
+              "first_air_date.lte": today,
+              "vote_count.gte": 20,
+              include_adult: "false",
+              page,
+            }).catch(() => ({ results: [] as TmdbListItem[], total_pages: 1 }))
+          : Promise.resolve({ results: [] as TmdbListItem[], total_pages: 1 });
+
+        const [movieRes, tvRes] = await Promise.all([moviePromise, tvPromise]);
+        const dated = [
+          ...movieRes.results.map((r) => ({ r, kind: "movie" as const, d: r.release_date ?? "" })),
+          ...tvRes.results.map((r) => ({ r, kind: "tv" as const, d: r.first_air_date ?? "" })),
+        ].sort((a, b) => b.d.localeCompare(a.d));
+
+        const movies = dated.flatMap((x) => normalizeList([x.r], x.kind));
         if (!movies.length && page === 1) {
           return { movies: fbByGenre(data.genre).sort((a, b) => b.year - a.year), page, totalPages: 1 };
         }
-        return { movies, page, totalPages: Math.min(res.total_pages ?? 1, 500) };
+        return {
+          movies,
+          page,
+          totalPages: Math.min(Math.max(movieRes.total_pages ?? 1, tvRes.total_pages ?? 1), 500),
+        };
       },
       () => ({
         movies: page === 1 ? fbByGenre(data.genre).sort((a, b) => b.year - a.year) : [],
@@ -643,6 +701,43 @@ export const getGenrePage = createServerFn({ method: "GET" })
       }),
     );
   });
+
+/**
+ * Recently released titles for a specific country/region (TMDB release region),
+ * newest first — used for the "New releases around the world" home rows.
+ */
+export const getRecentByRegion = createServerFn({ method: "GET" })
+  .inputValidator((d: { region: string; lang?: string }) =>
+    z.object({ region: z.string().min(2).max(2), lang: z.string().min(2).max(5).optional() }).parse(d))
+  .handler(async ({ data }) =>
+    safe(async () => {
+      const today = new Date();
+      const from = new Date(today.getTime() - 120 * 24 * 60 * 60_000);
+      const res = await tmdb<{ results: TmdbListItem[] }>("/discover/movie", {
+        region: data.region,
+        with_origin_country: data.region,
+        ...(data.lang ? { with_original_language: data.lang } : {}),
+        sort_by: "primary_release_date.desc",
+        "primary_release_date.gte": iso(from),
+        "primary_release_date.lte": iso(today),
+        "vote_count.gte": 5,
+        include_adult: "false",
+      });
+      let list = normalizeList(res.results);
+      if (list.length < 6) {
+        const relaxed = await tmdb<{ results: TmdbListItem[] }>("/discover/movie", {
+          ...(data.lang ? { with_original_language: data.lang } : { with_origin_country: data.region }),
+          sort_by: "primary_release_date.desc",
+          "primary_release_date.gte": iso(new Date(today.getTime() - 365 * 24 * 60 * 60_000)),
+          "primary_release_date.lte": iso(today),
+          include_adult: "false",
+        });
+        list = normalizeList(relaxed.results);
+      }
+      return list.length ? list : fbNewest();
+    }, fbNewest),
+  );
+
 
 export interface CreditPerson {
   id: string;
@@ -658,7 +753,7 @@ export const getMovieCredits = createServerFn({ method: "GET" })
       const res = await tmdb<{
         cast?: { id: number; name: string; character?: string; profile_path?: string | null; order?: number }[];
         crew?: { id: number; name: string; job?: string; department?: string; profile_path?: string | null }[];
-      }>(`/movie/${data.id}/credits`);
+      }>(`${isTvId(data.id) ? "/tv" : "/movie"}/${rawId(data.id)}/credits`);
       const cast: CreditPerson[] = (res.cast ?? []).slice(0, 24).map((c) => ({
         id: `cast-${c.id}-${c.character ?? ""}`,
         name: c.name,

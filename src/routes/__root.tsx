@@ -4,6 +4,7 @@ import {
   Link,
   createRootRouteWithContext,
   useRouter,
+  useRouterState,
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
@@ -144,6 +145,7 @@ function RootShell({ children }: { children: ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const router = useRouter();
+  const isHome = useRouterState({ select: (s) => s.location.pathname === "/" });
   useEffect(() => {
     const { data: sub } = supabase.auth.onAuthStateChange((event) => {
       if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
@@ -155,12 +157,17 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <Navbar />
-      <main className="min-h-dvh pt-28 md:pt-16">
-        <Outlet />
-      </main>
-      <footer className="border-t border-border py-10 mt-12 text-center text-xs text-muted-foreground">
-        <p>LumoroX AI · Powered by curated cinema & local intelligence</p>
-      </footer>
+      <div className="flex min-h-dvh flex-col">
+        <main className="flex-1 pt-28 md:pt-16">
+          <Outlet />
+        </main>
+        {isHome && (
+          <footer className="mt-12 border-t border-border py-10 text-center text-xs text-muted-foreground">
+            <p>LumoroX AI · Powered by curated cinema & local intelligence</p>
+          </footer>
+        )}
+      </div>
+
       <Toaster />
     </QueryClientProvider>
   );
