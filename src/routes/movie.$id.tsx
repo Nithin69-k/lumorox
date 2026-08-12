@@ -160,19 +160,59 @@ function MoviePage() {
   const toggleWatchlist = useUserStore((s) => s.toggleWatchlist);
   const rate = useUserStore((s) => s.rate);
 
+  // Focus management for the trailer dialog: trap Tab inside it while open and
+  // return focus to the trigger when it closes, so keyboard users never get lost.
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLElement | null>(null);
+  const closeTrailer = () => setPlaying(false);
+
   useEffect(() => {
-    if (!playing) return;
+    if (!playing) {
+      const t = triggerRef.current;
+      triggerRef.current = null;
+      t?.focus();
+      return;
+    }
+    triggerRef.current = (document.activeElement as HTMLElement | null) ?? null;
+    const focusables = () =>
+      Array.from(
+        dialogRef.current?.querySelectorAll<HTMLElement>(
+          'button, [href], iframe, input, select, textarea, [tabindex]:not([tabindex="-1"])',
+        ) ?? [],
+      ).filter((el) => !el.hasAttribute("disabled"));
+
+    const raf = requestAnimationFrame(() => focusables()[0]?.focus());
+
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setPlaying(false);
+      if (e.key === "Escape") {
+        e.preventDefault();
+        setPlaying(false);
+        return;
+      }
+      if (e.key !== "Tab") return;
+      const items = focusables();
+      if (items.length === 0) return;
+      const first = items[0]!;
+      const last = items[items.length - 1]!;
+      const active = document.activeElement as HTMLElement | null;
+      if (e.shiftKey && (active === first || !dialogRef.current?.contains(active))) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && active === last) {
+        e.preventDefault();
+        first.focus();
+      }
     };
-    document.addEventListener("keydown", onKey);
+    document.addEventListener("keydown", onKey, true);
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
-      document.removeEventListener("keydown", onKey);
+      cancelAnimationFrame(raf);
+      document.removeEventListener("keydown", onKey, true);
       document.body.style.overflow = prev;
     };
   }, [playing]);
+
 
 
   if (!movie) return null;
