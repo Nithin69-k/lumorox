@@ -302,7 +302,10 @@ export const getMovieDetails = createServerFn({ method: "GET" })
       const genres = (it.genres ?? [])
         .map((g) => g.name as Genre)
         .filter((g): g is Genre => Boolean(g));
-      const director = it.credits?.crew?.find((c) => c.job === "Director")?.name || "";
+      const director =
+        it.credits?.crew?.find((c) => c.job === "Director")?.name ||
+        it.credits?.crew?.find((c) => c.job === "Executive Producer")?.name ||
+        "";
       const cast = (it.credits?.cast ?? []).slice(0, 8).map((c) => c.name);
       const keywords = (it.keywords?.keywords ?? []).slice(0, 8).map((k) => k.name);
       const videos = it.videos?.results ?? [];
@@ -311,12 +314,12 @@ export const getMovieDetails = createServerFn({ method: "GET" })
         videos.find((v) => v.site === "YouTube" && v.type === "Trailer") ||
         videos.find((v) => v.site === "YouTube");
       return {
-        id: String(it.id),
+        id: tv ? `tv-${it.id}` : String(it.id),
         title: it.title || it.name || "Untitled",
         year,
         genres,
         rating: Math.round((it.vote_average ?? 0) * 10) / 10,
-        runtime: it.runtime ?? 0,
+        runtime: it.runtime ?? it.episode_run_time?.[0] ?? 0,
         overview: it.overview || "",
         director,
         cast,
@@ -336,13 +339,17 @@ export const getSimilar = createServerFn({ method: "GET" })
   .inputValidator((d: { id: string }) => z.object({ id: z.string() }).parse(d))
   .handler(async ({ data }) => {
     try {
-      const res = await tmdb<{ results: TmdbListItem[] }>(`/movie/${data.id}/recommendations`);
-      const list = normalizeList(res.results);
+      const tv = isTvId(data.id);
+      const res = await tmdb<{ results: TmdbListItem[] }>(
+        `${tv ? "/tv" : "/movie"}/${rawId(data.id)}/recommendations`,
+      );
+      const list = normalizeList(res.results, tv ? "tv" : "movie");
       return list.length ? list : fbSimilar(data.id);
     } catch {
       return fbSimilar(data.id);
     }
   });
+
 
 // ============================================================================
 // Personalized recommendations (Phase 1 + 2): candidate pool from user seeds,
