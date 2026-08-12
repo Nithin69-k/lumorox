@@ -392,7 +392,86 @@ function MoviePage() {
   );
 }
 
+/**
+ * Personalized "Because you watched …" row: blends this title's genre context
+ * with the viewer's watchlist, likes and ratings to re-rank a candidate pool.
+ */
+function BecauseYouWatched({ movie, pool }: { movie: Movie; pool: Movie[] }) {
+  const watchlist = useUserStore((s) => s.watchlist);
+  const likes = useUserStore((s) => s.likes);
+  const dislikes = useUserStore((s) => s.dislikes);
+  const ratings = useUserStore((s) => s.ratings);
+
+  const primary = movie.genres[0];
+  const secondary = movie.genres[1];
+  const { data: g1 = [] } = useQuery({
+    queryKey: ["tmdb", "genre", primary],
+    queryFn: () => getByGenre({ data: { genre: primary as string } }),
+    enabled: Boolean(primary),
+    staleTime: 30 * 60_000,
+  });
+  const { data: g2 = [] } = useQuery({
+    queryKey: ["tmdb", "genre", secondary],
+    queryFn: () => getByGenre({ data: { genre: secondary as string } }),
+    enabled: Boolean(secondary),
+    staleTime: 30 * 60_000,
+  });
+
+  const picks = useMemo(() => {
+    // Genres the viewer keeps saving / liking / rating highly.
+    const affinity = new Map<string, number>();
+    const seedIds = new Set<string>([
+      ...watchlist,
+      ...likes,
+      ...Object.entries(ratings).filter(([, r]) => r >= 7).map(([id]) => id),
+    ]);
+    const candidates = [...pool, ...g1, ...g2];
+    for (const c of candidates) {
+      if (!seedIds.has(c.id)) continue;
+      for (const g of c.genres) affinity.set(g, (affinity.get(g) ?? 0) + 1);
+    }
+    for (const g of movie.genres) affinity.set(g, (affinity.get(g) ?? 0) + 1.5);
+
+    const blocked = new Set<string>([movie.id, ...dislikes]);
+    const seen = new Set<string>();
+    const scored = candidates
+      .filter((c) => {
+        if (blocked.has(c.id) || seen.has(c.id)) return false;
+        seen.add(c.id);
+        return true;
+      })
+      .map((c) => {
+        const genreScore = c.genres.reduce((s, g) => s + (affinity.get(g) ?? 0), 0);
+        const shared = c.genres.filter((g) => movie.genres.includes(g)).length;
+        const inPool = pool.some((p) => p.id === c.id) ? 1.2 : 0;
+        const saved = watchlist.includes(c.id) ? -2 : 0; // already saved -> deprioritise
+        return { c, score: genreScore * 0.6 + shared * 1.4 + c.rating * 0.25 + inPool + saved };
+      })
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 18)
+      .map((x) => x.c);
+    return scored;
+  }, [pool, g1, g2, movie, watchlist, likes, dislikes, ratings]);
+
+  if (picks.length === 0) return null;
+
+  const personalized = watchlist.length + likes.length + Object.keys(ratings).length > 0;
+
+  return (
+    <MovieRow
+      title={`Because you watched ${movie.title}`}
+      subtitle={
+        personalized
+          ? "Matched to this title's genres and your watchlist, likes and ratings"
+          : `Picked from ${movie.genres.slice(0, 2).join(" & ") || "similar"} titles you may enjoy next`
+      }
+      movies={picks}
+    />
+  );
+}
+
 function PeopleSection({ title, people }: { title: string; people: CreditPerson[] }) {
+
   if (people.length === 0) return null;
   return (
     <section className="mt-10 first:mt-0" aria-label={title}>
