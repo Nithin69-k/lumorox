@@ -55,7 +55,7 @@ export function Hero({ movie }: { movie: Movie }) {
             <Link
               to="/movie/$id"
               params={{ id: movie.id }}
-              search={{}}
+              search={{ play: undefined }}
               className="inline-flex items-center gap-2 rounded-md glass px-5 py-3 text-sm font-semibold text-foreground transition hover:bg-accent"
             >
               <Info className="h-4 w-4" /> More info
