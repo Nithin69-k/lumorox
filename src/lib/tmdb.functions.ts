@@ -292,10 +292,13 @@ export const getMovieDetails = createServerFn({ method: "GET" })
   .inputValidator((d: { id: string }) => z.object({ id: z.string() }).parse(d))
   .handler(async ({ data }): Promise<Movie | null> => {
     try {
-      const it = await tmdb<TmdbDetails>(`/movie/${data.id}`, {
-        append_to_response: "credits,videos,keywords",
-      });
-      const year = Number((it.release_date || "").slice(0, 4)) || 0;
+      const tv = isTvId(data.id);
+      const it = await tmdb<TmdbDetails & { episode_run_time?: number[] }>(
+        `${tv ? "/tv" : "/movie"}/${rawId(data.id)}`,
+        { append_to_response: "credits,videos,keywords" },
+      );
+      const year = Number((it.release_date || it.first_air_date || "").slice(0, 4)) || 0;
+
       const genres = (it.genres ?? [])
         .map((g) => g.name as Genre)
         .filter((g): g is Genre => Boolean(g));
