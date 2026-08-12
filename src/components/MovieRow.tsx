@@ -33,7 +33,8 @@ export function MovieRow({ title, movies, emptyHint, ranked, subtitle }: Props) 
     }
   };
 
-  if (movies.length === 0 && emptyHint) {
+  if (movies.length === 0) {
+    if (!emptyHint) return null; // never leave an empty band at the end of a page
     return (
       <section className="container mx-auto px-4 py-6">
         <h2 className="font-display text-2xl tracking-wide sm:text-3xl">{title}</h2>
@@ -41,6 +42,7 @@ export function MovieRow({ title, movies, emptyHint, ranked, subtitle }: Props) 
       </section>
     );
   }
+
 
 
   return (
