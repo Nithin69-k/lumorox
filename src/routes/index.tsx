@@ -9,7 +9,7 @@ import { motion } from "framer-motion";
 import {
   getTrending, getPopular, getTopRated, getUpcoming, getByGenre,
   getNowPlaying, getLatestReleases,
-  getTopTenToday, getBestThisMonth, getAllTimeBest, getByLanguage,
+  getTopTenToday, getBestThisMonth, getAllTimeBest, getByLanguage, getRecentByRegion,
 } from "@/lib/tmdb.functions";
 
 // Auto-refresh cadence for catalogue data (15 minutes)
@@ -31,7 +31,27 @@ const langOpts = (lang: string, window?: "recent" | "all") =>
     queryFn: () => getByLanguage({ data: { lang, ...(window ? { window } : {}) } }),
     ...live,
   });
+const regionOpts = (region: string, lang?: string) =>
+  queryOptions({
+    queryKey: ["tmdb", "region", region, lang ?? "any"],
+    queryFn: () => getRecentByRegion({ data: { region, ...(lang ? { lang } : {}) } }),
+    ...live,
+  });
 const genreOpts = (g: string) => queryOptions({ queryKey: ["tmdb", "genre", g], queryFn: () => getByGenre({ data: { genre: g } }), ...live });
+
+// Recently released titles, grouped by country/region of release
+const REGION_ROWS: Array<{ region: string; lang?: string; title: string }> = [
+  { region: "IN", lang: "te", title: "New Releases in India · Telugu" },
+  { region: "IN", lang: "ta", title: "New Releases in India · Tamil" },
+  { region: "IN", lang: "hi", title: "New Releases in India · Hindi" },
+  { region: "US", title: "New Releases in the USA" },
+  { region: "GB", title: "New Releases in the UK" },
+  { region: "JP", lang: "ja", title: "New Releases in Japan" },
+  { region: "KR", lang: "ko", title: "New Releases in South Korea" },
+  { region: "CN", lang: "zh", title: "New Releases in China" },
+  { region: "FR", lang: "fr", title: "New Releases in France" },
+  { region: "ES", lang: "es", title: "New Releases in Spain" },
+];
 
 // Worldwide language rows shown on the home page
 const LANGUAGE_ROWS: Array<{ lang: string; title: string }> = [
@@ -94,6 +114,21 @@ function HomePage() {
         <Suspense fallback={<MovieRowSkeleton title="Top Rated" />}><TopRatedRow /></Suspense>
         <Suspense fallback={<MovieRowSkeleton title="Best Movies of All Time" />}><AllTimeRow /></Suspense>
         <Suspense fallback={<MovieRowSkeleton title="Coming Soon" />}><UpcomingRow /></Suspense>
+
+        <section aria-labelledby="region-releases" className="container mx-auto px-4 pt-8">
+          <h2 id="region-releases" className="text-gradient font-display text-2xl tracking-wide sm:text-3xl">
+            New Releases Around the World
+          </h2>
+          <div className="accent-rule mt-2" />
+          <p className="mt-2 text-sm text-muted-foreground">
+            The latest cinema releases country by country, refreshed daily.
+          </p>
+        </section>
+        {REGION_ROWS.map((r) => (
+          <Suspense key={`${r.region}-${r.lang ?? "any"}`} fallback={<MovieRowSkeleton title={r.title} />}>
+            <RegionRow region={r.region} {...(r.lang ? { lang: r.lang } : {})} title={r.title} />
+          </Suspense>
+        ))}
 
         {LANGUAGE_ROWS.map((l) => (
           <Suspense key={l.lang} fallback={<MovieRowSkeleton title={l.title} />}>
@@ -177,6 +212,11 @@ function AllTimeRow() {
 function LanguageRow({ lang, title }: { lang: string; title: string }) {
   const { data } = useSuspenseQuery(langOpts(lang));
   return <MovieRow title={title} movies={data} />;
+}
+
+function RegionRow({ region, lang, title }: { region: string; lang?: string; title: string }) {
+  const { data } = useSuspenseQuery(regionOpts(region, lang));
+  return <MovieRow title={title} movies={data} subtitle="Newest first" />;
 }
 
 function TopRatedRow() {
