@@ -340,19 +340,32 @@ function MoviePage() {
 
       {playing && movie.trailerYoutubeId && (
         <div
+          ref={dialogRef}
           className="fixed inset-0 z-[60] grid place-items-center bg-black/85 p-4 backdrop-blur"
-          onClick={() => setPlaying(false)}
+          onClick={closeTrailer}
           role="dialog"
-          aria-label="Trailer"
+          aria-modal="true"
+          aria-label={`${movie.title} trailer`}
         >
-          <div className="aspect-video w-full max-w-5xl" onClick={(e) => e.stopPropagation()}>
-            <iframe
-              src={`https://www.youtube.com/embed/${movie.trailerYoutubeId}?autoplay=1`}
-              title={`${movie.title} trailer`}
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-              className="h-full w-full rounded-lg"
-            />
+          <div className="w-full max-w-5xl" onClick={(e) => e.stopPropagation()}>
+            <div className="mb-3 flex justify-end">
+              <button
+                type="button"
+                onClick={closeTrailer}
+                className="inline-flex min-h-11 items-center gap-2 rounded-full glass px-4 text-sm font-semibold text-foreground hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+              >
+                <X aria-hidden className="h-4 w-4" /> Close trailer
+              </button>
+            </div>
+            <div className="aspect-video w-full">
+              <iframe
+                src={`https://www.youtube.com/embed/${movie.trailerYoutubeId}?autoplay=1`}
+                title={`${movie.title} trailer`}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                className="h-full w-full rounded-lg"
+              />
+            </div>
           </div>
         </div>
       )}
@@ -365,6 +378,7 @@ function MoviePage() {
       ) : null}
 
       <div className="mt-16">
+        <BecauseYouWatched movie={movie} pool={[...similar, ...semantic.map((s) => s.movie)]} />
         {semantic.length > 0 && (
           <MovieRow
             title="Semantically Similar (AI)"
@@ -373,6 +387,7 @@ function MoviePage() {
         )}
         <MovieRow title="More Like This" movies={similar} emptyHint="No similar titles yet." />
       </div>
+
     </article>
   );
 }
