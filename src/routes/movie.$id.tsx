@@ -1,6 +1,6 @@
 import { createFileRoute, notFound, Link } from "@tanstack/react-router";
 import { queryOptions, useSuspenseQuery, useQuery } from "@tanstack/react-query";
-import { Star, Clock, Calendar, ArrowLeft, Heart, ThumbsUp, ThumbsDown, Play } from "lucide-react";
+import { Star, Clock, Calendar, ArrowLeft, Heart, ThumbsUp, ThumbsDown, Play, X } from "lucide-react";
 import { motion } from "framer-motion";
 import { MoviePoster } from "@/components/MoviePoster";
 import { MovieRow } from "@/components/MovieRow";
