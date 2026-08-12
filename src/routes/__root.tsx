@@ -155,12 +155,17 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <Navbar />
-      <main className="min-h-dvh pt-28 md:pt-16">
-        <Outlet />
-      </main>
-      <footer className="border-t border-border py-10 mt-12 text-center text-xs text-muted-foreground">
-        <p>LumoroX AI · Powered by curated cinema & local intelligence</p>
-      </footer>
+      <div className="flex min-h-dvh flex-col">
+        <main className="flex-1 pt-28 md:pt-16">
+          <Outlet />
+        </main>
+        {isHome && (
+          <footer className="mt-12 border-t border-border py-10 text-center text-xs text-muted-foreground">
+            <p>LumoroX AI · Powered by curated cinema & local intelligence</p>
+          </footer>
+        )}
+      </div>
+
       <Toaster />
     </QueryClientProvider>
   );
