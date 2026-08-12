@@ -17,22 +17,53 @@ export const Route = createFileRoute("/genre/$genre")({
       return { meta: [{ title: "Genre not found — LumoroX AI" }, { name: "robots", content: "noindex" }] };
     }
     const g = loaderData.genre;
+    const lg = g.toLowerCase();
     const url = `https://lumorox.lovable.app/genre/${params.genre}`;
-    const title = `${g} Movies — Newest First, Reviews & Trailers | LumoroX AI`;
-    const description = `Browse every ${g.toLowerCase()} movie ordered from the newest releases to the classics, with ratings, synopses, cast and trailers.`;
+    const title = `${g} Movies & TV Shows — New Releases First | LumoroX AI`;
+    const description = `Watch every ${lg} movie, TV series and show ordered newest to oldest — ratings, reviews, synopses, cast, crew and trailers for ${lg} titles worldwide.`;
     return {
       meta: [
         { title },
         { name: "description", content: description },
+        { name: "keywords", content: `${lg} movies, ${lg} tv shows, ${lg} series, new ${lg} releases, ${lg} trailers, ${lg} reviews, best ${lg} movies` },
         { property: "og:title", content: title },
         { property: "og:description", content: description },
         { property: "og:type", content: "website" },
         { property: "og:url", content: url },
         { name: "twitter:card", content: "summary_large_image" },
+        { name: "twitter:title", content: title },
+        { name: "twitter:description", content: description },
       ],
       links: [{ rel: "canonical", href: url }],
+      scripts: [
+        {
+          type: "application/ld+json",
+          children: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "CollectionPage",
+            name: `${g} Movies & TV Shows`,
+            url,
+            description,
+            isPartOf: { "@type": "WebSite", name: "LumoroX AI", url: "https://lumorox.lovable.app/" },
+            about: { "@type": "Thing", name: `${g} genre` },
+          }),
+        },
+        {
+          type: "application/ld+json",
+          children: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "BreadcrumbList",
+            itemListElement: [
+              { "@type": "ListItem", position: 1, name: "Home", item: "https://lumorox.lovable.app/" },
+              { "@type": "ListItem", position: 2, name: "Genres", item: "https://lumorox.lovable.app/search" },
+              { "@type": "ListItem", position: 3, name: g, item: url },
+            ],
+          }),
+        },
+      ],
     };
   },
+
   component: GenrePage,
   notFoundComponent: () => (
     <div className="container mx-auto px-4 py-20 text-center">
