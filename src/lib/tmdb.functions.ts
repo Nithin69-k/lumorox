@@ -753,7 +753,7 @@ export const getMovieCredits = createServerFn({ method: "GET" })
       const res = await tmdb<{
         cast?: { id: number; name: string; character?: string; profile_path?: string | null; order?: number }[];
         crew?: { id: number; name: string; job?: string; department?: string; profile_path?: string | null }[];
-      }>(`${isTvId(data.id) ? "/tv" : "/movie"}/${rawId(data.id)}/${isTvId(data.id) ? "aggregate_credits" : "credits"}`);
+      }>(`${isTvId(data.id) ? "/tv" : "/movie"}/${rawId(data.id)}/credits`);
       const cast: CreditPerson[] = (res.cast ?? []).slice(0, 24).map((c) => ({
         id: `cast-${c.id}-${c.character ?? ""}`,
         name: c.name,
