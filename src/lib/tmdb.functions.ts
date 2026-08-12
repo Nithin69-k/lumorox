@@ -643,6 +643,10 @@ export const getByLanguage = createServerFn({ method: "GET" })
 // Genre browsing (newest → oldest, paginated) + full credits for detail pages.
 // ============================================================================
 
+/**
+ * Everything in a genre — movies AND TV series/shows — ordered newest → oldest.
+ * Paginated so the UI can offer a "Load more" button.
+ */
 export const getGenrePage = createServerFn({ method: "GET" })
   .inputValidator((d: { genre: string; page?: number }) =>
     z.object({ genre: z.string().min(1), page: z.number().int().min(1).max(500).optional() }).parse(d))
@@ -653,7 +657,9 @@ export const getGenrePage = createServerFn({ method: "GET" })
         const id = GENRE_NAME_TO_ID[data.genre];
         if (!id) return { movies: [] as Movie[], page, totalPages: 1 };
         const today = new Date().toISOString().slice(0, 10);
-        const res = await tmdb<{ results: TmdbListItem[]; total_pages?: number }>("/discover/movie", {
+        const tvId = TV_GENRE_ID_FOR[data.genre];
+
+        const moviePromise = tmdb<{ results: TmdbListItem[]; total_pages?: number }>("/discover/movie", {
           with_genres: id,
           sort_by: "primary_release_date.desc",
           "primary_release_date.lte": today,
@@ -661,11 +667,32 @@ export const getGenrePage = createServerFn({ method: "GET" })
           include_adult: "false",
           page,
         });
-        const movies = normalizeList(res.results).sort((a, b) => b.year - a.year);
+        const tvPromise = tvId
+          ? tmdb<{ results: TmdbListItem[]; total_pages?: number }>("/discover/tv", {
+              with_genres: tvId,
+              sort_by: "first_air_date.desc",
+              "first_air_date.lte": today,
+              "vote_count.gte": 20,
+              include_adult: "false",
+              page,
+            }).catch(() => ({ results: [] as TmdbListItem[], total_pages: 1 }))
+          : Promise.resolve({ results: [] as TmdbListItem[], total_pages: 1 });
+
+        const [movieRes, tvRes] = await Promise.all([moviePromise, tvPromise]);
+        const dated = [
+          ...movieRes.results.map((r) => ({ r, kind: "movie" as const, d: r.release_date ?? "" })),
+          ...tvRes.results.map((r) => ({ r, kind: "tv" as const, d: r.first_air_date ?? "" })),
+        ].sort((a, b) => b.d.localeCompare(a.d));
+
+        const movies = dated.flatMap((x) => normalizeList([x.r], x.kind));
         if (!movies.length && page === 1) {
           return { movies: fbByGenre(data.genre).sort((a, b) => b.year - a.year), page, totalPages: 1 };
         }
-        return { movies, page, totalPages: Math.min(res.total_pages ?? 1, 500) };
+        return {
+          movies,
+          page,
+          totalPages: Math.min(Math.max(movieRes.total_pages ?? 1, tvRes.total_pages ?? 1), 500),
+        };
       },
       () => ({
         movies: page === 1 ? fbByGenre(data.genre).sort((a, b) => b.year - a.year) : [],
@@ -674,6 +701,43 @@ export const getGenrePage = createServerFn({ method: "GET" })
       }),
     );
   });
+
+/**
+ * Recently released titles for a specific country/region (TMDB release region),
+ * newest first — used for the "New releases around the world" home rows.
+ */
+export const getRecentByRegion = createServerFn({ method: "GET" })
+  .inputValidator((d: { region: string; lang?: string }) =>
+    z.object({ region: z.string().min(2).max(2), lang: z.string().min(2).max(5).optional() }).parse(d))
+  .handler(async ({ data }) =>
+    safe(async () => {
+      const today = new Date();
+      const from = new Date(today.getTime() - 120 * 24 * 60 * 60_000);
+      const res = await tmdb<{ results: TmdbListItem[] }>("/discover/movie", {
+        region: data.region,
+        with_origin_country: data.region,
+        ...(data.lang ? { with_original_language: data.lang } : {}),
+        sort_by: "primary_release_date.desc",
+        "primary_release_date.gte": iso(from),
+        "primary_release_date.lte": iso(today),
+        "vote_count.gte": 5,
+        include_adult: "false",
+      });
+      let list = normalizeList(res.results);
+      if (list.length < 6) {
+        const relaxed = await tmdb<{ results: TmdbListItem[] }>("/discover/movie", {
+          ...(data.lang ? { with_original_language: data.lang } : { with_origin_country: data.region }),
+          sort_by: "primary_release_date.desc",
+          "primary_release_date.gte": iso(new Date(today.getTime() - 365 * 24 * 60 * 60_000)),
+          "primary_release_date.lte": iso(today),
+          include_adult: "false",
+        });
+        list = normalizeList(relaxed.results);
+      }
+      return list.length ? list : fbNewest();
+    }, fbNewest),
+  );
+
 
 export interface CreditPerson {
   id: string;
