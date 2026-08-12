@@ -123,11 +123,12 @@ function normalizeList(items: TmdbListItem[], kind: "movie" | "tv" = "movie"): M
     .map((it): Movie => {
       const year = Number((it.release_date || it.first_air_date || "").slice(0, 4)) || 0;
       const genres = (it.genre_ids ?? [])
-        .map((g) => GENRE_BY_ID[g])
+        .map((g) => (kind === "tv" ? TV_GENRE_BY_ID[g] : GENRE_BY_ID[g]))
         .filter((g): g is Genre => Boolean(g));
       return {
-        id: String(it.id),
+        id: kind === "tv" ? `tv-${it.id}` : String(it.id),
         title: it.title || it.name || "Untitled",
+
         year,
         genres,
         rating: Math.round((it.vote_average ?? 0) * 10) / 10,
