@@ -97,7 +97,27 @@ interface TmdbListItem {
   genre_ids?: number[];
 }
 
-function normalizeList(items: TmdbListItem[]): Movie[] {
+// TV genre ids differ from movie ids; map them onto our shared genre names.
+const TV_GENRE_BY_ID: Record<number, Genre> = {
+  10759: "Action", 16: "Animation", 35: "Comedy", 80: "Crime", 18: "Drama",
+  10751: "Family", 10762: "Family", 9648: "Mystery", 10765: "Science Fiction",
+  10768: "War", 37: "Western",
+};
+
+// Movie genre name -> the closest TV genre id (undefined when TV has no match).
+const TV_GENRE_ID_FOR: Record<string, number | undefined> = {
+  Action: 10759, Adventure: 10759, Animation: 16, Comedy: 35, Crime: 80,
+  Drama: 18, Family: 10751, Fantasy: 10765, History: undefined, Horror: undefined,
+  Mystery: 9648, Romance: undefined, "Science Fiction": 10765, Thriller: undefined,
+  War: 10768, Western: 37,
+};
+
+/** TV entries are stored with a `tv-` id prefix so detail routes can tell them apart. */
+export const isTvId = (id: string) => id.startsWith("tv-");
+const rawId = (id: string) => (id.startsWith("tv-") ? id.slice(3) : id);
+
+function normalizeList(items: TmdbListItem[], kind: "movie" | "tv" = "movie"): Movie[] {
+
   return items
     .filter((it) => it.poster_path)
     .map((it): Movie => {
