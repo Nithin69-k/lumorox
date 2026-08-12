@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { MoviePoster } from "@/components/MoviePoster";
 import { MovieRow } from "@/components/MovieRow";
 import { useUserStore } from "@/store/user";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { getMovieDetails, getSimilar, getMovieCredits, type CreditPerson } from "@/lib/tmdb.functions";
 import { getSemanticSimilar } from "@/lib/semantic.functions";
