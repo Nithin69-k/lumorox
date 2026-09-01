@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import { getMovieDetails, getSimilar, getMovieCredits, getByGenre, type CreditPerson } from "@/lib/tmdb.functions";
 import type { Movie } from "@/data/movies";
 import { getSemanticSimilar } from "@/lib/semantic.functions";
+import { JsonLd, itemListSchema } from "@/components/JsonLd";
 
 const detailsOpts = (id: string) => queryOptions({
   queryKey: ["tmdb", "movie", id],
