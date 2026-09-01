@@ -21,6 +21,7 @@ import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as WatchlistRouteImport } from './routes/watchlist'
 import { Route as GenreGenreRouteImport } from './routes/genre.$genre'
 import { Route as MovieIdRouteImport } from './routes/movie.$id'
+import { Route as ApiPublicHealthRouteImport } from './routes/api/public/health'
 import { Route as ApiPublicHooksRefreshCatalogRouteImport } from './routes/api/public/hooks/refresh-catalog'
 
 const IndexRoute = IndexRouteImport.update({
@@ -83,6 +84,11 @@ const MovieIdRoute = MovieIdRouteImport.update({
   path: '/movie/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicHealthRoute = ApiPublicHealthRouteImport.update({
+  id: '/api/public/health',
+  path: '/api/public/health',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicHooksRefreshCatalogRoute =
   ApiPublicHooksRefreshCatalogRouteImport.update({
     id: '/api/public/hooks/refresh-catalog',
@@ -103,6 +109,7 @@ export interface FileRoutesByFullPath {
   '/watchlist': typeof WatchlistRoute
   '/genre/$genre': typeof GenreGenreRoute
   '/movie/$id': typeof MovieIdRoute
+  '/api/public/health': typeof ApiPublicHealthRoute
   '/api/public/hooks/refresh-catalog': typeof ApiPublicHooksRefreshCatalogRoute
 }
 export interface FileRoutesByTo {
@@ -118,6 +125,7 @@ export interface FileRoutesByTo {
   '/watchlist': typeof WatchlistRoute
   '/genre/$genre': typeof GenreGenreRoute
   '/movie/$id': typeof MovieIdRoute
+  '/api/public/health': typeof ApiPublicHealthRoute
   '/api/public/hooks/refresh-catalog': typeof ApiPublicHooksRefreshCatalogRoute
 }
 export interface FileRoutesById {
@@ -134,6 +142,7 @@ export interface FileRoutesById {
   '/watchlist': typeof WatchlistRoute
   '/genre/$genre': typeof GenreGenreRoute
   '/movie/$id': typeof MovieIdRoute
+  '/api/public/health': typeof ApiPublicHealthRoute
   '/api/public/hooks/refresh-catalog': typeof ApiPublicHooksRefreshCatalogRoute
 }
 export interface FileRouteTypes {
@@ -151,6 +160,7 @@ export interface FileRouteTypes {
     | '/watchlist'
     | '/genre/$genre'
     | '/movie/$id'
+    | '/api/public/health'
     | '/api/public/hooks/refresh-catalog'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -166,6 +176,7 @@ export interface FileRouteTypes {
     | '/watchlist'
     | '/genre/$genre'
     | '/movie/$id'
+    | '/api/public/health'
     | '/api/public/hooks/refresh-catalog'
   id:
     | '__root__'
@@ -181,6 +192,7 @@ export interface FileRouteTypes {
     | '/watchlist'
     | '/genre/$genre'
     | '/movie/$id'
+    | '/api/public/health'
     | '/api/public/hooks/refresh-catalog'
   fileRoutesById: FileRoutesById
 }
@@ -197,6 +209,7 @@ export interface RootRouteChildren {
   WatchlistRoute: typeof WatchlistRoute
   GenreGenreRoute: typeof GenreGenreRoute
   MovieIdRoute: typeof MovieIdRoute
+  ApiPublicHealthRoute: typeof ApiPublicHealthRoute
   ApiPublicHooksRefreshCatalogRoute: typeof ApiPublicHooksRefreshCatalogRoute
 }
 
@@ -286,6 +299,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MovieIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/health': {
+      id: '/api/public/health'
+      path: '/api/public/health'
+      fullPath: '/api/public/health'
+      preLoaderRoute: typeof ApiPublicHealthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/refresh-catalog': {
       id: '/api/public/hooks/refresh-catalog'
       path: '/api/public/hooks/refresh-catalog'
@@ -309,6 +329,7 @@ const rootRouteChildren: RootRouteChildren = {
   WatchlistRoute: WatchlistRoute,
   GenreGenreRoute: GenreGenreRoute,
   MovieIdRoute: MovieIdRoute,
+  ApiPublicHealthRoute: ApiPublicHealthRoute,
   ApiPublicHooksRefreshCatalogRoute: ApiPublicHooksRefreshCatalogRoute,
 }
 export const routeTree = rootRouteImport

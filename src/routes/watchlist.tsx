@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQueries } from "@tanstack/react-query";
 import { Heart, Loader2 } from "lucide-react";
 import { MovieCard } from "@/components/MovieCard";
+import { MovieGridSkeleton } from "@/components/MovieCardSkeleton";
 import { useUserStore } from "@/store/user";
 import { getMovieDetails } from "@/lib/tmdb.functions";
 import type { Movie } from "@/data/movies";
@@ -46,9 +47,14 @@ function WatchlistPage() {
       <p className="mt-2 text-sm text-muted-foreground">Saved on this device. Sign-in sync coming soon.</p>
 
       {isLoading && watchlist.length > 0 && (
-        <p className="mt-6 flex items-center gap-2 text-sm text-muted-foreground">
-          <Loader2 className="h-4 w-4 animate-spin" /> Loading your saved titles…
-        </p>
+        <>
+          <p className="mt-6 flex items-center gap-2 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" /> Loading your saved titles…
+          </p>
+          <div className="mt-4">
+            <MovieGridSkeleton count={Math.min(watchlist.length, 12)} />
+          </div>
+        </>
       )}
 
       {watchlist.length === 0 ? (
@@ -58,11 +64,11 @@ function WatchlistPage() {
           <p className="mt-1 text-sm text-muted-foreground">Browse the catalog and tap + on any movie.</p>
           <Link to="/" className="mt-5 inline-block rounded-md brand-gradient px-4 py-2 text-sm font-semibold text-white">Browse movies</Link>
         </div>
-      ) : (
+      ) : movies.length > 0 ? (
         <div className="mt-6 grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
           {movies.map((m, i) => <MovieCard key={m.id} movie={m} index={i} className="w-full" />)}
         </div>
-      )}
+      ) : null}
 
       {favs.length > 0 && (
         <>
