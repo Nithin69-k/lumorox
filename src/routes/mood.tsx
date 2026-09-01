@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import { MOODS, type MoodId } from "@/data/genres";
 import { MovieCard } from "@/components/MovieCard";
+import { MovieGridSkeleton } from "@/components/MovieCardSkeleton";
 import { getMoodMovies } from "@/lib/tmdb.functions";
 import { Loader2 } from "lucide-react";
 
@@ -68,6 +69,19 @@ function MoodPage() {
           {list.map((m, i) => <MovieCard key={m.id} movie={m} index={i} className="w-full" />)}
         </motion.div>
       </AnimatePresence>
+
+      {isFetching && list.length === 0 && (
+        <div className="mt-8">
+          <MovieGridSkeleton count={12} />
+        </div>
+      )}
+
+      {!isFetching && list.length === 0 && (
+        <div className="mt-8 rounded-2xl border border-dashed border-border p-10 text-center">
+          <p className="font-display text-2xl">No picks for this mood yet</p>
+          <p className="mt-2 text-sm text-muted-foreground">Try another mood — the catalogue refreshes throughout the day.</p>
+        </div>
+      )}
     </div>
   );
 }

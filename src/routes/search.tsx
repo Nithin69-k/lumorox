@@ -5,6 +5,7 @@ import { Search as SearchIcon, X, Mic, MicOff, Loader2 } from "lucide-react";
 import { z } from "zod";
 import { zodValidator } from "@tanstack/zod-adapter";
 import { MovieCard } from "@/components/MovieCard";
+import { MovieGridSkeleton } from "@/components/MovieCardSkeleton";
 import { GENRES } from "@/data/genres";
 import { motion } from "framer-motion";
 import { discoverMovies } from "@/lib/tmdb.functions";
@@ -146,6 +147,12 @@ function SearchPage() {
         {results.length} {results.length === 1 ? "result" : "results"}
       </p>
 
+      {isFetching && results.length === 0 && (
+        <div className="mt-4">
+          <MovieGridSkeleton count={12} />
+        </div>
+      )}
+
       <motion.div
         layout
         className="mt-4 grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6"
@@ -158,7 +165,7 @@ function SearchPage() {
       </motion.div>
 
       {!isFetching && results.length === 0 && (
-        <div className="rounded-2xl border border-dashed border-border p-12 text-center">
+        <div className="mt-4 rounded-2xl border border-dashed border-border p-10 text-center sm:p-12">
           <p className="font-display text-2xl">No matches</p>
           <p className="mt-2 text-sm text-muted-foreground">Try a different keyword, or clear your filters.</p>
         </div>
