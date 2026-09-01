@@ -5,6 +5,7 @@ import { MovieCard } from "@/components/MovieCard";
 import { MovieCardSkeleton } from "@/components/MovieCardSkeleton";
 import { genreFromSlug } from "@/data/genres";
 import { getGenrePage } from "@/lib/tmdb.functions";
+import { JsonLd, itemListSchema } from "@/components/JsonLd";
 
 export const Route = createFileRoute("/genre/$genre")({
   loader: ({ params }) => {
@@ -85,9 +86,13 @@ function GenrePage() {
   });
 
   const movies = data?.pages.flatMap((p) => p.movies) ?? [];
+  const loadingFirstPage = isFetching && movies.length === 0;
 
   return (
     <div className="container mx-auto px-4 py-6">
+      {movies.length > 0 && (
+        <JsonLd data={itemListSchema(`${genre} movies, series and shows — newest first`, movies)} />
+      )}
       <Link
         to="/"
         className="inline-flex items-center gap-2 rounded-full glass px-3 py-1.5 text-sm text-foreground transition hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
@@ -112,13 +117,25 @@ function GenrePage() {
             <MovieCard movie={m} index={i} className="w-full" />
           </li>
         ))}
-        {isFetching && !isFetchingNextPage && movies.length === 0 &&
-          Array.from({ length: 12 }, (_, i) => (
-            <li key={`sk-${i}`} className="w-full">
-              <MovieCardSkeleton />
+        {(loadingFirstPage || isFetchingNextPage) &&
+          Array.from({ length: loadingFirstPage ? 12 : 6 }, (_, i) => (
+            <li key={`sk-${i}`} className="w-full" aria-hidden>
+              <MovieCardSkeleton className="w-full" />
             </li>
           ))}
       </ul>
+
+      {!isFetching && movies.length === 0 && (
+        <div className="mt-8 rounded-2xl border border-dashed border-border p-10 text-center">
+          <p className="font-display text-2xl">Nothing here yet</p>
+          <p className="mt-2 text-sm text-muted-foreground">
+            We couldn't load {genre.toLowerCase()} titles right now. Try again in a moment or browse another genre.
+          </p>
+          <Link to="/" className="mt-5 inline-block rounded-md brand-gradient px-4 py-2 text-sm font-semibold text-white">
+            Browse the catalog
+          </Link>
+        </div>
+      )}
 
       <div aria-live="polite" className="mt-10 flex justify-center">
         {hasNextPage ? (

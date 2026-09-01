@@ -64,11 +64,13 @@ async function tmdb<T>(path: string, params: Record<string, string | number | un
   if (key) url.searchParams.set("api_key", key);
   const headers = new Headers({ Accept: "application/json" });
   if (accessToken && !key) headers.set("Authorization", `Bearer ${accessToken}`);
-  const res = await fetch(url.toString(), {
-    headers,
-    // Also let the platform fetch cache dedupe identical concurrent requests
-    cf: { cacheTtl: Math.floor(ttlFor(path) / 1000), cacheEverything: true },
-  } as RequestInit);
+  // Cloudflare-only cache hints; Vercel/Node runtimes ignore unknown init keys,
+  // so only attach them where they are actually honoured.
+  const isWorkers = typeof navigator !== "undefined" && navigator.userAgent === "Cloudflare-Workers";
+  const init: RequestInit = isWorkers
+    ? ({ headers, cf: { cacheTtl: Math.floor(ttlFor(path) / 1000), cacheEverything: true } } as RequestInit)
+    : { headers };
+  const res = await fetch(url.toString(), init);
   if (!res.ok) {
     // On failure, serve stale if available
     if (hit) return hit.data as T;
