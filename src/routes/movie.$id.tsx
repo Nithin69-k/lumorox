@@ -459,15 +459,18 @@ function BecauseYouWatched({ movie, pool }: { movie: Movie; pool: Movie[] }) {
   const personalized = watchlist.length + likes.length + Object.keys(ratings).length > 0;
 
   return (
-    <MovieRow
-      title={`Because you watched ${movie.title}`}
-      subtitle={
-        personalized
-          ? "Matched to this title's genres and your watchlist, likes and ratings"
-          : `Picked from ${movie.genres.slice(0, 2).join(" & ") || "similar"} titles you may enjoy next`
-      }
-      movies={picks}
-    />
+    <>
+      <JsonLd data={itemListSchema(`Recommended because you watched ${movie.title}`, picks)} />
+      <MovieRow
+        title={`Because you watched ${movie.title}`}
+        subtitle={
+          personalized
+            ? "Matched to this title's genres and your watchlist, likes and ratings"
+            : `Picked from ${movie.genres.slice(0, 2).join(" & ") || "similar"} titles you may enjoy next`
+        }
+        movies={picks}
+      />
+    </>
   );
 }
 
