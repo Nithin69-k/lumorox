@@ -104,7 +104,7 @@ function HomePage() {
       {hero && <Hero movie={hero} />}
 
 
-      <div className="aurora space-y-2 pb-10">
+      <div className="aurora space-y-2 pb-2">
         <Suspense fallback={<MovieRowSkeleton title="Top 10 Today" />}><TopTenRow /></Suspense>
         <MovieRow title="Trending This Week" subtitle="What the world is watching right now" movies={trendingList} />
         <Suspense fallback={<MovieRowSkeleton title="In Cinemas Now" />}><NowPlayingRow /></Suspense>
