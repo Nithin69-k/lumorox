@@ -6,7 +6,6 @@ import { MovieGridSkeleton } from "@/components/MovieCardSkeleton";
 import { useUserStore } from "@/store/user";
 import { getPersonalizedRecommendations } from "@/lib/tmdb.functions";
 import { getCollaborativeRecommendations } from "@/lib/user-data.functions";
-import { useAuth } from "@/hooks/use-auth";
 import { useLibrarySync } from "@/hooks/use-library-sync";
 
 export const Route = createFileRoute("/recommendations")({
@@ -27,7 +26,6 @@ function RecPage() {
   const watchlist = useUserStore((s) => s.watchlist);
   const dislikes = useUserStore((s) => s.dislikes);
   const ratings = useUserStore((s) => s.ratings);
-  const { isAuthenticated } = useAuth();
   useLibrarySync();
 
   const highlyRatedCount = Object.values(ratings).filter((r) => r >= 7).length;
@@ -137,17 +135,6 @@ function RecPage() {
         </section>
       )}
 
-      {!isAuthenticated && seedCount > 0 && (
-        <div className="mt-12 rounded-2xl border border-border bg-secondary/30 p-6 text-center">
-          <h3 className="font-display text-xl">Unlock collaborative picks</h3>
-          <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
-            Sign in to sync your library across devices and get recommendations from viewers who share your taste.
-          </p>
-          <Link to="/auth" className="mt-4 inline-flex rounded-md brand-gradient px-4 py-2 text-sm font-semibold text-white">
-            Sign in
-          </Link>
-        </div>
-      )}
     </div>
   );
 }
