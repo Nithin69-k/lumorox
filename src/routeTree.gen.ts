@@ -11,7 +11,6 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AskRouteImport } from './routes/ask'
-import { Route as AuthRouteImport } from './routes/auth'
 import { Route as MetricsRouteImport } from './routes/metrics'
 import { Route as MoodRouteImport } from './routes/mood'
 import { Route as RecommendationsRouteImport } from './routes/recommendations'
@@ -32,11 +31,6 @@ const IndexRoute = IndexRouteImport.update({
 const AskRoute = AskRouteImport.update({
   id: '/ask',
   path: '/ask',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthRoute = AuthRouteImport.update({
-  id: '/auth',
-  path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MetricsRoute = MetricsRouteImport.update({
@@ -99,7 +93,6 @@ const ApiPublicHooksRefreshCatalogRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/ask': typeof AskRoute
-  '/auth': typeof AuthRoute
   '/metrics': typeof MetricsRoute
   '/mood': typeof MoodRoute
   '/recommendations': typeof RecommendationsRoute
@@ -115,7 +108,6 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/ask': typeof AskRoute
-  '/auth': typeof AuthRoute
   '/metrics': typeof MetricsRoute
   '/mood': typeof MoodRoute
   '/recommendations': typeof RecommendationsRoute
@@ -132,7 +124,6 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/ask': typeof AskRoute
-  '/auth': typeof AuthRoute
   '/metrics': typeof MetricsRoute
   '/mood': typeof MoodRoute
   '/recommendations': typeof RecommendationsRoute
@@ -150,7 +141,6 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/ask'
-    | '/auth'
     | '/metrics'
     | '/mood'
     | '/recommendations'
@@ -166,7 +156,6 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/ask'
-    | '/auth'
     | '/metrics'
     | '/mood'
     | '/recommendations'
@@ -182,7 +171,6 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/ask'
-    | '/auth'
     | '/metrics'
     | '/mood'
     | '/recommendations'
@@ -199,7 +187,6 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AskRoute: typeof AskRoute
-  AuthRoute: typeof AuthRoute
   MetricsRoute: typeof MetricsRoute
   MoodRoute: typeof MoodRoute
   RecommendationsRoute: typeof RecommendationsRoute
@@ -227,13 +214,6 @@ declare module '@tanstack/react-router' {
       path: '/ask'
       fullPath: '/ask'
       preLoaderRoute: typeof AskRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/auth': {
-      id: '/auth'
-      path: '/auth'
-      fullPath: '/auth'
-      preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/metrics': {
@@ -319,7 +299,6 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AskRoute: AskRoute,
-  AuthRoute: AuthRoute,
   MetricsRoute: MetricsRoute,
   MoodRoute: MoodRoute,
   RecommendationsRoute: RecommendationsRoute,
