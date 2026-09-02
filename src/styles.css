@@ -110,7 +110,9 @@
 @layer base {
   * { border-color: var(--color-border); }
   html, body { background-color: var(--color-background); color: var(--color-foreground); }
+  html, body { max-width: 100%; overflow-x: hidden; }
   body { font-family: var(--font-sans); -webkit-font-smoothing: antialiased; }
+
   ::selection { background: var(--brand); color: var(--brand-foreground); }
 }
 
