@@ -110,7 +110,9 @@
 @layer base {
   * { border-color: var(--color-border); }
   html, body { background-color: var(--color-background); color: var(--color-foreground); }
+  html, body { max-width: 100%; overflow-x: hidden; }
   body { font-family: var(--font-sans); -webkit-font-smoothing: antialiased; }
+
   ::selection { background: var(--brand); color: var(--brand-foreground); }
 }
 
@@ -151,11 +153,14 @@
 @utility aurora {
   position: relative;
   isolation: isolate;
+  /* clip keeps the haze from adding phantom scroll space around the section */
+  overflow: clip;
   &::before {
     content: "";
     position: absolute;
-    inset: -20% -10%;
+    inset: -10% -6%;
     z-index: -1;
+
     pointer-events: none;
     background:
       radial-gradient(38% 46% at 12% 18%, oklch(0.62 0.24 27 / 0.20), transparent 70%),

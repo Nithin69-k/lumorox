@@ -164,7 +164,7 @@ function RootComponent() {
           <Outlet />
         </main>
         {isHome && (
-          <footer className="mt-12 border-t border-border py-10 text-center text-xs text-muted-foreground">
+          <footer className="border-t border-border py-6 text-center text-xs text-muted-foreground">
             <p>LumoroX AI · Powered by curated cinema & local intelligence</p>
           </footer>
         )}
