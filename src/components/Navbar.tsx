@@ -1,10 +1,7 @@
-import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
-import { Film, Search, Heart, Sparkles, Smile, Sun, Moon, Wand2, LogIn, LogOut, User as UserIcon } from "lucide-react";
+import { Link, useRouterState } from "@tanstack/react-router";
+import { Film, Search, Heart, Sparkles, Smile, Sun, Moon, Wand2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
-import { useAuth } from "@/hooks/use-auth";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
 
 const links = [
   { to: "/", label: "Home", icon: Film },
@@ -19,16 +16,6 @@ export function Navbar() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [scrolled, setScrolled] = useState(false);
   const [light, setLight] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const { user, isAuthenticated } = useAuth();
-  const navigate = useNavigate();
-
-  const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    setMenuOpen(false);
-    toast.success("Signed out");
-    navigate({ to: "/" });
-  };
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
