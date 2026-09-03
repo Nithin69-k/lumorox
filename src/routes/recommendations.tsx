@@ -5,7 +5,6 @@ import { MovieCard } from "@/components/MovieCard";
 import { MovieGridSkeleton } from "@/components/MovieCardSkeleton";
 import { useUserStore } from "@/store/user";
 import { getPersonalizedRecommendations } from "@/lib/tmdb.functions";
-import { useLibrarySync } from "@/hooks/use-library-sync";
 
 export const Route = createFileRoute("/recommendations")({
   head: () => ({
@@ -25,7 +24,7 @@ function RecPage() {
   const watchlist = useUserStore((s) => s.watchlist);
   const dislikes = useUserStore((s) => s.dislikes);
   const ratings = useUserStore((s) => s.ratings);
-  useLibrarySync();
+
 
   const highlyRatedCount = Object.values(ratings).filter((r) => r >= 7).length;
   const seedCount = new Set([
