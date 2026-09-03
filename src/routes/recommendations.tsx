@@ -1,11 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Sparkles, BarChart3, Users } from "lucide-react";
+import { Sparkles, BarChart3 } from "lucide-react";
 import { MovieCard } from "@/components/MovieCard";
 import { MovieGridSkeleton } from "@/components/MovieCardSkeleton";
 import { useUserStore } from "@/store/user";
 import { getPersonalizedRecommendations } from "@/lib/tmdb.functions";
-import { getCollaborativeRecommendations } from "@/lib/user-data.functions";
 import { useLibrarySync } from "@/hooks/use-library-sync";
 
 export const Route = createFileRoute("/recommendations")({
