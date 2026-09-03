@@ -1,11 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Sparkles, BarChart3, Users } from "lucide-react";
+import { Sparkles, BarChart3 } from "lucide-react";
 import { MovieCard } from "@/components/MovieCard";
 import { MovieGridSkeleton } from "@/components/MovieCardSkeleton";
 import { useUserStore } from "@/store/user";
 import { getPersonalizedRecommendations } from "@/lib/tmdb.functions";
-import { getCollaborativeRecommendations } from "@/lib/user-data.functions";
 import { useLibrarySync } from "@/hooks/use-library-sync";
 
 export const Route = createFileRoute("/recommendations")({
@@ -33,13 +32,6 @@ function RecPage() {
     ...likes,
     ...Object.entries(ratings).filter(([, r]) => r >= 7).map(([id]) => id),
   ]).size;
-
-  const { data: collab = [], isFetching: collabLoading } = useQuery({
-    queryKey: ["recs", "collab", isAuthenticated],
-    queryFn: () => getCollaborativeRecommendations({ data: { limit: 12 } }),
-    enabled: isAuthenticated,
-    staleTime: 5 * 60_000,
-  });
 
   const { data: recs = [], isFetching, isSuccess } = useQuery({
     queryKey: ["recs", "personalized", likes.join(","), dislikes.join(","), watchlist.join(","), JSON.stringify(ratings)],
@@ -108,32 +100,6 @@ function RecPage() {
         <p className="mt-8 text-sm text-muted-foreground">No new recommendations right now — try liking more titles.</p>
       )}
 
-      {isAuthenticated && (
-        <section className="mt-14">
-          <div className="flex items-center gap-3">
-            <div className="grid h-10 w-10 place-items-center rounded-lg bg-secondary">
-              <Users className="h-5 w-5 text-brand" />
-            </div>
-            <div>
-              <h2 className="font-display text-2xl tracking-tight">Community picks</h2>
-              <p className="text-xs text-muted-foreground">Collaborative filtering — viewers with taste like yours also loved these.</p>
-            </div>
-          </div>
-          {collabLoading && <div className="mt-6"><MovieGridSkeleton count={6} /></div>}
-          {!collabLoading && collab.length === 0 && (
-            <p className="mt-4 text-sm text-muted-foreground">
-              Rate a few more movies to unlock collaborative picks — we need a taste signal to find your neighbors.
-            </p>
-          )}
-          {collab.length > 0 && (
-            <div className="mt-6 grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
-              {collab.map((r, i) => (
-                <MovieCard key={r.movie.id} movie={r.movie} index={i} reason={r.reason} className="w-full" />
-              ))}
-            </div>
-          )}
-        </section>
-      )}
 
     </div>
   );
