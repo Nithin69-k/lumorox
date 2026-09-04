@@ -21,6 +21,7 @@ import { Route as WatchlistRouteImport } from './routes/watchlist'
 import { Route as GenreGenreRouteImport } from './routes/genre.$genre'
 import { Route as MovieIdRouteImport } from './routes/movie.$id'
 import { Route as ApiPublicHealthRouteImport } from './routes/api/public/health'
+import { Route as ApiPublicVercelSyncRouteImport } from './routes/api/public/vercel-sync'
 import { Route as ApiPublicHooksRefreshCatalogRouteImport } from './routes/api/public/hooks/refresh-catalog'
 
 const IndexRoute = IndexRouteImport.update({
@@ -83,6 +84,11 @@ const ApiPublicHealthRoute = ApiPublicHealthRouteImport.update({
   path: '/api/public/health',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicVercelSyncRoute = ApiPublicVercelSyncRouteImport.update({
+  id: '/api/public/vercel-sync',
+  path: '/api/public/vercel-sync',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicHooksRefreshCatalogRoute =
   ApiPublicHooksRefreshCatalogRouteImport.update({
     id: '/api/public/hooks/refresh-catalog',
@@ -103,6 +109,7 @@ export interface FileRoutesByFullPath {
   '/genre/$genre': typeof GenreGenreRoute
   '/movie/$id': typeof MovieIdRoute
   '/api/public/health': typeof ApiPublicHealthRoute
+  '/api/public/vercel-sync': typeof ApiPublicVercelSyncRoute
   '/api/public/hooks/refresh-catalog': typeof ApiPublicHooksRefreshCatalogRoute
 }
 export interface FileRoutesByTo {
@@ -118,6 +125,7 @@ export interface FileRoutesByTo {
   '/genre/$genre': typeof GenreGenreRoute
   '/movie/$id': typeof MovieIdRoute
   '/api/public/health': typeof ApiPublicHealthRoute
+  '/api/public/vercel-sync': typeof ApiPublicVercelSyncRoute
   '/api/public/hooks/refresh-catalog': typeof ApiPublicHooksRefreshCatalogRoute
 }
 export interface FileRoutesById {
@@ -134,6 +142,7 @@ export interface FileRoutesById {
   '/genre/$genre': typeof GenreGenreRoute
   '/movie/$id': typeof MovieIdRoute
   '/api/public/health': typeof ApiPublicHealthRoute
+  '/api/public/vercel-sync': typeof ApiPublicVercelSyncRoute
   '/api/public/hooks/refresh-catalog': typeof ApiPublicHooksRefreshCatalogRoute
 }
 export interface FileRouteTypes {
@@ -151,6 +160,7 @@ export interface FileRouteTypes {
     | '/genre/$genre'
     | '/movie/$id'
     | '/api/public/health'
+    | '/api/public/vercel-sync'
     | '/api/public/hooks/refresh-catalog'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -166,6 +176,7 @@ export interface FileRouteTypes {
     | '/genre/$genre'
     | '/movie/$id'
     | '/api/public/health'
+    | '/api/public/vercel-sync'
     | '/api/public/hooks/refresh-catalog'
   id:
     | '__root__'
@@ -181,6 +192,7 @@ export interface FileRouteTypes {
     | '/genre/$genre'
     | '/movie/$id'
     | '/api/public/health'
+    | '/api/public/vercel-sync'
     | '/api/public/hooks/refresh-catalog'
   fileRoutesById: FileRoutesById
 }
@@ -197,6 +209,7 @@ export interface RootRouteChildren {
   GenreGenreRoute: typeof GenreGenreRoute
   MovieIdRoute: typeof MovieIdRoute
   ApiPublicHealthRoute: typeof ApiPublicHealthRoute
+  ApiPublicVercelSyncRoute: typeof ApiPublicVercelSyncRoute
   ApiPublicHooksRefreshCatalogRoute: typeof ApiPublicHooksRefreshCatalogRoute
 }
 
@@ -286,6 +299,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHealthRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/vercel-sync': {
+      id: '/api/public/vercel-sync'
+      path: '/api/public/vercel-sync'
+      fullPath: '/api/public/vercel-sync'
+      preLoaderRoute: typeof ApiPublicVercelSyncRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/refresh-catalog': {
       id: '/api/public/hooks/refresh-catalog'
       path: '/api/public/hooks/refresh-catalog'
@@ -309,6 +329,7 @@ const rootRouteChildren: RootRouteChildren = {
   GenreGenreRoute: GenreGenreRoute,
   MovieIdRoute: MovieIdRoute,
   ApiPublicHealthRoute: ApiPublicHealthRoute,
+  ApiPublicVercelSyncRoute: ApiPublicVercelSyncRoute,
   ApiPublicHooksRefreshCatalogRoute: ApiPublicHooksRefreshCatalogRoute,
 }
 export const routeTree = rootRouteImport

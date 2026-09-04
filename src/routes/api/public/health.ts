@@ -4,6 +4,9 @@ import { createFileRoute } from "@tanstack/react-router";
  * Deployment parity probe. Reports WHICH environment variables the running
  * deployment can see (never their values) plus a live TMDB reachability check.
  * Use it right after a Vercel deploy: GET /api/public/health
+ *
+ * Note: the app is sign-in-free and fully client-local, so the backend auth
+ * variables are optional and do not affect the status.
  */
 export const Route = createFileRoute("/api/public/health")({
   server: {
@@ -13,15 +16,7 @@ export const Route = createFileRoute("/api/public/health")({
         const env = {
           TMDB_API_KEY: has("TMDB_API_KEY"),
           TMDB_ACCESS_TOKEN: has("TMDB_ACCESS_TOKEN"),
-          SUPABASE_URL: has("SUPABASE_URL"),
-          SUPABASE_PUBLISHABLE_KEY: has("SUPABASE_PUBLISHABLE_KEY"),
-          SUPABASE_SERVICE_ROLE_KEY: has("SUPABASE_SERVICE_ROLE_KEY"),
-          LOVABLE_API_KEY: has("LOVABLE_API_KEY"),
           SITE_URL: has("SITE_URL"),
-        };
-        const clientEnv = {
-          VITE_SUPABASE_URL: Boolean(import.meta.env.VITE_SUPABASE_URL),
-          VITE_SUPABASE_PUBLISHABLE_KEY: Boolean(import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY),
         };
 
         let tmdb: { ok: boolean; status?: number; error?: string } = {
@@ -45,10 +40,6 @@ export const Route = createFileRoute("/api/public/health")({
 
         const missing = [
           ...(!env.TMDB_API_KEY && !env.TMDB_ACCESS_TOKEN ? ["TMDB_API_KEY or TMDB_ACCESS_TOKEN"] : []),
-          ...(!clientEnv.VITE_SUPABASE_URL ? ["VITE_SUPABASE_URL (build-time)"] : []),
-          ...(!clientEnv.VITE_SUPABASE_PUBLISHABLE_KEY ? ["VITE_SUPABASE_PUBLISHABLE_KEY (build-time)"] : []),
-          ...(!env.SUPABASE_URL ? ["SUPABASE_URL"] : []),
-          ...(!env.SUPABASE_PUBLISHABLE_KEY ? ["SUPABASE_PUBLISHABLE_KEY"] : []),
         ];
 
         return new Response(
@@ -58,7 +49,6 @@ export const Route = createFileRoute("/api/public/health")({
               liveCatalogue: tmdb.ok,
               missing,
               env,
-              clientEnv,
               tmdb,
               time: new Date().toISOString(),
             },
