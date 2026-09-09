@@ -220,7 +220,7 @@ function MoviePage() {
   if (!movie) return null;
 
   return (
-    <article className="-mt-28 md:-mt-16">
+    <article className="-mt-28 w-full min-w-0 overflow-x-clip md:-mt-16">
       <div className="relative h-[70vh] min-h-[480px] w-full overflow-hidden">
         <MoviePoster
           movie={{ ...movie, posterUrl: movie.backdropUrl ?? movie.posterUrl }}
@@ -236,7 +236,7 @@ function MoviePage() {
         </Link>
       </div>
 
-      <div className="container relative mx-auto -mt-72 grid grid-cols-1 gap-8 px-4 md:grid-cols-[260px_1fr] md:gap-10">
+      <div className="container relative mx-auto -mt-72 grid w-full min-w-0 grid-cols-1 gap-8 px-4 md:grid-cols-[260px_1fr] md:gap-10">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -245,7 +245,7 @@ function MoviePage() {
           <MoviePoster movie={movie} rounded="rounded-xl" />
         </motion.div>
 
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+        <motion.div className="min-w-0" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
           <h1 className="font-display text-4xl leading-none tracking-tight sm:text-6xl">{movie.title}</h1>
           <div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
             <span className="flex items-center gap-1 text-[var(--gold)]">
@@ -375,7 +375,7 @@ function MoviePage() {
       )}
 
       {(credits?.cast?.length || credits?.crew?.length) ? (
-        <div className="container mx-auto mt-16 px-4">
+        <div className="container mx-auto mt-16 w-full min-w-0 px-4">
           <PeopleSection title="Top Cast" people={credits?.cast ?? []} />
           <PeopleSection title="Crew" people={credits?.crew ?? []} />
         </div>
@@ -484,7 +484,7 @@ function PeopleSection({ title, people }: { title: string; people: CreditPerson[
     <section className="mt-10 first:mt-0" aria-label={title}>
       <h2 className="text-gradient font-display text-2xl tracking-wide sm:text-3xl">{title}</h2>
       <div className="accent-rule mt-2" />
-      <ul className="mt-5 grid grid-cols-3 gap-4 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8">
+      <ul className="mt-5 grid w-full grid-cols-3 gap-3 sm:grid-cols-4 sm:gap-4 md:grid-cols-6 lg:grid-cols-8">
         {people.map((p) => (
           <li key={p.id} className="min-w-0">
             <div className="aspect-[2/3] overflow-hidden rounded-xl bg-secondary ring-1 ring-white/5">
