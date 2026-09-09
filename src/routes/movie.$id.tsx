@@ -304,6 +304,8 @@ function MoviePage() {
             </button>
           </div>
 
+          <WhereToWatch id={movie.id} title={movie.title} />
+
           <div className="mt-6">
             <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">Your rating</p>
             <div className="mt-2 flex gap-1">
