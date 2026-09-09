@@ -7,7 +7,7 @@ import { MovieRow } from "@/components/MovieRow";
 import { useUserStore } from "@/store/user";
 import { useState, useEffect, useRef, useMemo } from "react";
 import { cn } from "@/lib/utils";
-import { getMovieDetails, getSimilar, getMovieCredits, getByGenre, type CreditPerson } from "@/lib/tmdb.functions";
+import { getMovieDetails, getSimilar, getMovieCredits, getByGenre, getWatchProviders, type CreditPerson, type WatchProvider } from "@/lib/tmdb.functions";
 import type { Movie } from "@/data/movies";
 import { getSemanticSimilar } from "@/lib/semantic.functions";
 import { JsonLd, itemListSchema } from "@/components/JsonLd";
