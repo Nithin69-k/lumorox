@@ -110,16 +110,16 @@ function GenrePage() {
 
       <ul
         aria-label={`${genre} movies, series and shows, newest first`}
-        className="mt-8 grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6"
+        className="mt-8 grid w-full grid-cols-2 gap-x-3 gap-y-6 sm:grid-cols-3 sm:gap-x-4 sm:gap-y-8 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6"
       >
         {movies.map((m, i) => (
-          <li key={`${m.id}-${i}`} className="w-full">
+          <li key={`${m.id}-${i}`} className="min-w-0">
             <MovieCard movie={m} index={i} className="w-full" />
           </li>
         ))}
         {(loadingFirstPage || isFetchingNextPage) &&
           Array.from({ length: loadingFirstPage ? 12 : 6 }, (_, i) => (
-            <li key={`sk-${i}`} className="w-full" aria-hidden>
+            <li key={`sk-${i}`} className="min-w-0" aria-hidden>
               <MovieCardSkeleton className="w-full" />
             </li>
           ))}

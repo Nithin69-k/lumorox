@@ -789,3 +789,63 @@ export const getMovieCredits = createServerFn({ method: "GET" })
       return { cast: [], crew: [] };
     }
   });
+
+export interface WatchProvider {
+  id: number;
+  name: string;
+  logoUrl: string | null;
+}
+export interface WatchProviders {
+  link: string | null;
+  stream: WatchProvider[];
+  rent: WatchProvider[];
+  buy: WatchProvider[];
+}
+
+interface TmdbProvider {
+  provider_id: number;
+  provider_name: string;
+  logo_path?: string | null;
+  display_priority?: number;
+}
+
+/**
+ * Legal "where to watch" options (stream / rent / buy) for a title, sourced
+ * from TMDB's JustWatch-backed provider data. Falls back to an empty result
+ * when the region has no listings or TMDB is unavailable.
+ */
+export const getWatchProviders = createServerFn({ method: "GET" })
+  .inputValidator((d: { id: string; region?: string }) =>
+    z.object({ id: z.string(), region: z.string().length(2).optional() }).parse(d),
+  )
+  .handler(async ({ data }): Promise<WatchProviders> => {
+    const empty: WatchProviders = { link: null, stream: [], rent: [], buy: [] };
+    try {
+      const res = await tmdb<{
+        results?: Record<
+          string,
+          { link?: string; flatrate?: TmdbProvider[]; free?: TmdbProvider[]; ads?: TmdbProvider[]; rent?: TmdbProvider[]; buy?: TmdbProvider[] }
+        >;
+      }>(`${isTvId(data.id) ? "/tv" : "/movie"}/${rawId(data.id)}/watch/providers`);
+      const region = (data.region ?? "IN").toUpperCase();
+      const entry = res.results?.[region] ?? res.results?.["US"] ?? res.results?.["GB"];
+      if (!entry) return empty;
+      const map = (list?: TmdbProvider[]): WatchProvider[] =>
+        (list ?? [])
+          .sort((a, b) => (a.display_priority ?? 99) - (b.display_priority ?? 99))
+          .slice(0, 8)
+          .map((p) => ({
+            id: p.provider_id,
+            name: p.provider_name,
+            logoUrl: p.logo_path ? `${IMG}/w92${p.logo_path}` : null,
+          }));
+      return {
+        link: entry.link ?? null,
+        stream: map([...(entry.flatrate ?? []), ...(entry.free ?? []), ...(entry.ads ?? [])]),
+        rent: map(entry.rent),
+        buy: map(entry.buy),
+      };
+    } catch {
+      return empty;
+    }
+  });

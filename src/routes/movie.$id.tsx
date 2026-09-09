@@ -1,13 +1,13 @@
 import { createFileRoute, notFound, Link } from "@tanstack/react-router";
 import { queryOptions, useSuspenseQuery, useQuery } from "@tanstack/react-query";
-import { Star, Clock, Calendar, ArrowLeft, Heart, ThumbsUp, ThumbsDown, Play, X } from "lucide-react";
+import { Star, Clock, Calendar, ArrowLeft, Heart, ThumbsUp, ThumbsDown, Play, X, ExternalLink } from "lucide-react";
 import { motion } from "framer-motion";
 import { MoviePoster } from "@/components/MoviePoster";
 import { MovieRow } from "@/components/MovieRow";
 import { useUserStore } from "@/store/user";
 import { useState, useEffect, useRef, useMemo } from "react";
 import { cn } from "@/lib/utils";
-import { getMovieDetails, getSimilar, getMovieCredits, getByGenre, type CreditPerson } from "@/lib/tmdb.functions";
+import { getMovieDetails, getSimilar, getMovieCredits, getByGenre, getWatchProviders, type CreditPerson, type WatchProvider } from "@/lib/tmdb.functions";
 import type { Movie } from "@/data/movies";
 import { getSemanticSimilar } from "@/lib/semantic.functions";
 import { JsonLd, itemListSchema } from "@/components/JsonLd";
@@ -220,7 +220,7 @@ function MoviePage() {
   if (!movie) return null;
 
   return (
-    <article className="-mt-28 md:-mt-16">
+    <article className="-mt-28 w-full min-w-0 overflow-x-clip md:-mt-16">
       <div className="relative h-[70vh] min-h-[480px] w-full overflow-hidden">
         <MoviePoster
           movie={{ ...movie, posterUrl: movie.backdropUrl ?? movie.posterUrl }}
@@ -236,7 +236,7 @@ function MoviePage() {
         </Link>
       </div>
 
-      <div className="container relative mx-auto -mt-72 grid grid-cols-1 gap-8 px-4 md:grid-cols-[260px_1fr] md:gap-10">
+      <div className="container relative mx-auto -mt-72 grid w-full min-w-0 grid-cols-1 gap-8 px-4 md:grid-cols-[260px_1fr] md:gap-10">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -245,7 +245,7 @@ function MoviePage() {
           <MoviePoster movie={movie} rounded="rounded-xl" />
         </motion.div>
 
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+        <motion.div className="min-w-0" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
           <h1 className="font-display text-4xl leading-none tracking-tight sm:text-6xl">{movie.title}</h1>
           <div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
             <span className="flex items-center gap-1 text-[var(--gold)]">
@@ -303,6 +303,8 @@ function MoviePage() {
               <ThumbsDown className="h-4 w-4" />
             </button>
           </div>
+
+          <WhereToWatch id={movie.id} title={movie.title} />
 
           <div className="mt-6">
             <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">Your rating</p>
@@ -373,7 +375,7 @@ function MoviePage() {
       )}
 
       {(credits?.cast?.length || credits?.crew?.length) ? (
-        <div className="container mx-auto mt-16 px-4">
+        <div className="container mx-auto mt-16 w-full min-w-0 px-4">
           <PeopleSection title="Top Cast" people={credits?.cast ?? []} />
           <PeopleSection title="Crew" people={credits?.crew ?? []} />
         </div>
@@ -482,7 +484,7 @@ function PeopleSection({ title, people }: { title: string; people: CreditPerson[
     <section className="mt-10 first:mt-0" aria-label={title}>
       <h2 className="text-gradient font-display text-2xl tracking-wide sm:text-3xl">{title}</h2>
       <div className="accent-rule mt-2" />
-      <ul className="mt-5 grid grid-cols-3 gap-4 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8">
+      <ul className="mt-5 grid w-full grid-cols-3 gap-3 sm:grid-cols-4 sm:gap-4 md:grid-cols-6 lg:grid-cols-8">
         {people.map((p) => (
           <li key={p.id} className="min-w-0">
             <div className="aspect-[2/3] overflow-hidden rounded-xl bg-secondary ring-1 ring-white/5">
@@ -508,3 +510,71 @@ function PeopleSection({ title, people }: { title: string; people: CreditPerson[
   );
 }
 
+
+/** Legal streaming / rent / buy options, sourced from TMDB's provider data. */
+function WhereToWatch({ id, title }: { id: string; title: string }) {
+  const { data } = useQuery({
+    queryKey: ["tmdb", "providers", id],
+    queryFn: () => getWatchProviders({ data: { id } }),
+    staleTime: 6 * 60 * 60_000,
+  });
+  if (!data) return null;
+  const groups: { label: string; items: WatchProvider[] }[] = [
+    { label: "Stream", items: data.stream },
+    { label: "Rent", items: data.rent },
+    { label: "Buy", items: data.buy },
+  ].filter((g) => g.items.length > 0);
+  if (groups.length === 0) return null;
+
+  return (
+    <section className="mt-7" aria-label={`Where to watch ${title}`}>
+      <div className="flex flex-wrap items-center gap-3">
+        <h2 className="text-xs font-medium uppercase tracking-widest text-muted-foreground">Where to watch</h2>
+        {data.link && (
+          <a
+            href={data.link}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex min-h-9 items-center gap-1.5 rounded-full border border-brand/60 px-3 text-xs font-semibold text-brand hover:bg-brand hover:text-brand-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          >
+            <ExternalLink aria-hidden className="h-3.5 w-3.5" /> All options
+          </a>
+        )}
+      </div>
+      <div className="mt-3 space-y-3">
+        {groups.map((g) => (
+          <div key={g.label} className="flex min-w-0 flex-wrap items-center gap-2">
+            <span className="w-14 shrink-0 text-xs text-muted-foreground">{g.label}</span>
+            {g.items.map((p) => {
+              const inner = (
+                <>
+                  {p.logoUrl ? (
+                    <img src={p.logoUrl} alt="" loading="lazy" className="h-6 w-6 rounded-md object-cover" />
+                  ) : null}
+                  <span className="max-w-[9rem] truncate">{p.name}</span>
+                </>
+              );
+              const cls =
+                "inline-flex min-h-9 items-center gap-2 rounded-full border border-border bg-secondary/50 px-2.5 py-1 text-xs text-foreground transition hover:border-brand hover:text-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background";
+              return data.link ? (
+                <a
+                  key={`${g.label}-${p.id}`}
+                  href={data.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={`${g.label} ${title} on ${p.name}`}
+                  className={cls}
+                >
+                  {inner}
+                </a>
+              ) : (
+                <span key={`${g.label}-${p.id}`} className={cls}>{inner}</span>
+              );
+            })}
+          </div>
+        ))}
+      </div>
+      <p className="mt-2 text-[11px] text-muted-foreground">Streaming availability by JustWatch via TMDB.</p>
+    </section>
+  );
+}
