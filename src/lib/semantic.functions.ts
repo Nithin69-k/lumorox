@@ -243,6 +243,13 @@ export const getSemanticSimilar = createServerFn({ method: "POST" })
 // ============================================================================
 
 const ALL_GENRES = Object.keys(GENRE_NAME_TO_ID);
+const AI_MODEL = "google/gemini-3.8-flash";
+
+interface Suggestion {
+  title: string;
+  year: number | null;
+  why: string;
+}
 
 interface ParsedQuery {
   searchText: string;
@@ -252,28 +259,36 @@ interface ParsedQuery {
   minRating: number | null;
   referenceTitle: string | null;
   mood: string | null;
+  language: string | null;
+  titles: Suggestion[];
 }
 
+/**
+ * One LLM call that both understands the request AND names concrete titles.
+ * Naming real titles is what makes the answers exact — vector search alone
+ * drifts on a sparse index.
+ */
 async function parseNlQuery(q: string): Promise<ParsedQuery> {
   const key = process.env.LOVABLE_API_KEY;
   if (!key) throw new Error("LOVABLE_API_KEY not configured");
-  const system = `You extract structured movie search filters from a user's natural-language request.
-Return ONLY a JSON object with keys:
-- searchText (string, required): a concise semantic description of what they want, expanded with tone/themes/plot cues. This will be embedded for vector search.
-- genres (array of strings): zero or more of exactly: ${ALL_GENRES.join(", ")}. Omit if unclear.
-- yearMin (number or null), yearMax (number or null): 4-digit years, or null.
-- minRating (number 0-10 or null): only set if user demanded quality (e.g. "great", "highly rated").
-- referenceTitle (string or null): a specific movie name they compared to (e.g. "like Prisoners").
-- mood (string or null): short mood label if implied (e.g. "slow-burn", "feel-good", "mind-bending").
-No prose. JSON only.`;
+  const year = new Date().getFullYear();
+  const system = `You are a precise film expert. The user describes what they want to watch. Answer with ONLY a JSON object:
+{
+  "searchText": string,            // concise restatement of the intent
+  "genres": string[],              // subset of exactly: ${ALL_GENRES.join(", ")} (empty if unclear)
+  "yearMin": number|null, "yearMax": number|null,   // 4-digit years (today is ${year})
+  "minRating": number|null,        // 0-10, only if they demanded quality
+  "referenceTitle": string|null,   // a movie they compared to
+  "mood": string|null,             // short mood label
+  "language": string|null,         // ISO-639-1 code if they named a language/industry (te, ta, kn, ml, hi, ja, ko, zh, es, fr...)
+  "titles": [{"title": string, "year": number|null, "why": string}]  // 18-24 REAL existing films/series that genuinely satisfy the request
+}
+Rules for "titles": they must actually exist and must match every explicit constraint (genre, era, language, rating, similarity to the reference). Order best match first. "why" is one short specific clause explaining the fit (max 12 words). Never invent titles. JSON only, no prose.`;
   const res = await fetch(`${AI_GATEWAY}/chat/completions`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${key}`,
-    },
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
     body: JSON.stringify({
-      model: "google/gemini-2.5-flash",
+      model: AI_MODEL,
       messages: [
         { role: "system", content: system },
         { role: "user", content: q },
@@ -288,7 +303,17 @@ No prose. JSON only.`;
   const json = (await res.json()) as { choices: { message: { content: string } }[] };
   const raw = json.choices?.[0]?.message?.content ?? "{}";
   let parsed: Partial<ParsedQuery> = {};
-  try { parsed = JSON.parse(raw); } catch { /* fall through */ }
+  try { parsed = JSON.parse(raw) as Partial<ParsedQuery>; } catch { /* fall through */ }
+  const titles: Suggestion[] = Array.isArray(parsed.titles)
+    ? parsed.titles
+        .filter((t): t is Suggestion => Boolean(t) && typeof (t as Suggestion).title === "string")
+        .slice(0, 24)
+        .map((t) => ({
+          title: t.title.trim(),
+          year: typeof t.year === "number" && t.year > 1880 ? t.year : null,
+          why: typeof t.why === "string" ? t.why.trim() : "",
+        }))
+    : [];
   return {
     searchText: (parsed.searchText || q).slice(0, 1000),
     genres: Array.isArray(parsed.genres) ? parsed.genres.filter((g): g is string => typeof g === "string" && ALL_GENRES.includes(g)) : [],
@@ -297,6 +322,8 @@ No prose. JSON only.`;
     minRating: typeof parsed.minRating === "number" ? parsed.minRating : null,
     referenceTitle: typeof parsed.referenceTitle === "string" && parsed.referenceTitle.length > 0 ? parsed.referenceTitle : null,
     mood: typeof parsed.mood === "string" && parsed.mood.length > 0 ? parsed.mood : null,
+    language: typeof parsed.language === "string" && /^[a-z]{2}$/.test(parsed.language) ? parsed.language : null,
+    titles,
   };
 }
 
@@ -306,87 +333,127 @@ export interface AskResult {
   summary: string;
 }
 
+const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+
+/** Resolve an LLM-named title to the real TMDB entry (movie first, then TV). */
+async function resolveTitle(s: Suggestion): Promise<Movie | null> {
+  const pick = (results: TmdbListItem[] | undefined): TmdbListItem | null => {
+    const list = results ?? [];
+    if (list.length === 0) return null;
+    const want = norm(s.title);
+    const scored = list.map((r) => {
+      const name = norm(r.title || r.name || "");
+      const yr = Number((r.release_date || (r as { first_air_date?: string }).first_air_date || "").slice(0, 4)) || 0;
+      let score = 0;
+      if (name === want) score += 100;
+      else if (name.startsWith(want) || want.startsWith(name)) score += 60;
+      else if (name.includes(want)) score += 30;
+      if (s.year && yr) score += Math.max(0, 20 - Math.abs(yr - s.year) * 6);
+      score += Math.min(10, (r.popularity ?? 0) / 20);
+      return { r, score };
+    }).sort((a, b) => b.score - a.score);
+    return scored[0].score >= 25 ? scored[0].r : null;
+  };
+  try {
+    const movie = await tmdbFetch<{ results: TmdbListItem[] }>("/search/movie", {
+      query: s.title, include_adult: "false", year: s.year ?? undefined,
+    });
+    const hit = pick(movie.results);
+    if (hit) return normalizeListItem(hit);
+  } catch { /* try tv */ }
+  try {
+    const tv = await tmdbFetch<{ results: TmdbListItem[] }>("/search/tv", { query: s.title, include_adult: "false" });
+    const hit = pick(tv.results);
+    if (hit) {
+      const m = normalizeListItem(hit);
+      return { ...m, id: `tv-${m.id}` };
+    }
+  } catch { /* give up */ }
+  return null;
+}
+
+/** Discover-based top-up so a thin LLM answer still fills the grid. */
+async function discoverFallback(parsed: ParsedQuery, limit: number): Promise<Movie[]> {
+  try {
+    const genreIds = parsed.genres.map((g) => GENRE_NAME_TO_ID[g]).filter(Boolean).join(",");
+    const res = await tmdbFetch<{ results: TmdbListItem[] }>("/discover/movie", {
+      with_genres: genreIds || undefined,
+      with_original_language: parsed.language ?? undefined,
+      "primary_release_date.gte": parsed.yearMin ? `${parsed.yearMin}-01-01` : undefined,
+      "primary_release_date.lte": parsed.yearMax ? `${parsed.yearMax}-12-31` : undefined,
+      "vote_average.gte": parsed.minRating ?? undefined,
+      "vote_count.gte": parsed.minRating ? 500 : 200,
+      sort_by: parsed.minRating ? "vote_average.desc" : "popularity.desc",
+      include_adult: "false",
+    });
+    return normalizeList(res.results).slice(0, limit);
+  } catch {
+    return [];
+  }
+}
+
+function normalizeList(items: TmdbListItem[] | undefined): Movie[] {
+  return (items ?? []).map(normalizeListItem);
+}
+
 export const askAi = createServerFn({ method: "POST" })
   .inputValidator((d: { q: string }) => z.object({ q: z.string().min(2).max(500) }).parse(d))
   .handler(async ({ data }): Promise<AskResult> => {
     const parsed = await parseNlQuery(data.q);
 
-    // 1. Get a query embedding — either from the referenced movie or from searchText
-    let queryEmbedding: number[] | null = null;
-    let referenceMovie: Movie | null = null;
+    // 1. Resolve the LLM's named titles against TMDB — these are the exact answers.
+    const resolved = await Promise.all(parsed.titles.map(async (s) => {
+      const movie = await resolveTitle(s);
+      return movie ? { movie, why: s.why } : null;
+    }));
 
-    if (parsed.referenceTitle) {
-      try {
-        const search = await tmdbFetch<{ results: TmdbListItem[] }>("/search/movie", {
-          query: parsed.referenceTitle,
-          include_adult: "false",
+    const seen = new Set<string>();
+    const refNorm = parsed.referenceTitle ? norm(parsed.referenceTitle) : null;
+    const matches: SemanticMatch[] = [];
+
+    for (const r of resolved) {
+      if (!r) continue;
+      const { movie, why } = r;
+      if (seen.has(movie.id)) continue;
+      if (refNorm && norm(movie.title) === refNorm) continue;
+      // Hard constraints the user stated explicitly.
+      if (parsed.yearMin && movie.year && movie.year < parsed.yearMin) continue;
+      if (parsed.yearMax && movie.year && movie.year > parsed.yearMax) continue;
+      if (parsed.minRating && movie.rating && movie.rating < parsed.minRating) continue;
+      if (parsed.genres.length > 0 && movie.genres.length > 0
+        && !parsed.genres.some((g) => (movie.genres as string[]).includes(g))) continue;
+      seen.add(movie.id);
+      const bits: string[] = [];
+      if (why) bits.push(why);
+      else if (parsed.referenceTitle) bits.push(`Shares the feel of ${parsed.referenceTitle}`);
+      else if (parsed.mood) bits.push(parsed.mood);
+      if (movie.rating) bits.push(`${movie.rating.toFixed(1)}/10`);
+      matches.push({ movie, similarity: 1 - matches.length / 40, reason: bits.join(" · ") });
+    }
+
+    // 2. Top up from TMDB discover when the model named too few usable titles.
+    if (matches.length < 12) {
+      const extra = await discoverFallback(parsed, 24);
+      for (const movie of extra) {
+        if (matches.length >= 18 || seen.has(movie.id)) continue;
+        seen.add(movie.id);
+        matches.push({
+          movie,
+          similarity: 0.4,
+          reason: [parsed.genres[0], `${movie.rating.toFixed(1)}/10 on TMDB`].filter(Boolean).join(" · "),
         });
-        const first = search.results?.[0];
-        if (first) {
-          referenceMovie = normalizeListItem(first);
-          await ensureEmbedding(referenceMovie.id).catch(() => {});
-          const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-          const { data: row } = await supabaseAdmin
-            .from("movie_embeddings" as never)
-            .select("embedding")
-            .eq("tmdb_id", referenceMovie.id)
-            .maybeSingle();
-          const rowTyped = row as { embedding: number[] | string } | null;
-          if (rowTyped) {
-            queryEmbedding = typeof rowTyped.embedding === "string" ? JSON.parse(rowTyped.embedding) as number[] : rowTyped.embedding;
-          }
-        }
-      } catch { /* fall through to text embed */ }
+      }
     }
-
-    if (!queryEmbedding) {
-      queryEmbedding = await embedText(parsed.searchText);
-    }
-
-    // 2. Warm the index with some candidates so cold-start returns something useful.
-    // We embed the top TMDB text-search hits, then KNN.
-    try {
-      const search = await tmdbFetch<{ results: TmdbListItem[] }>("/search/movie", {
-        query: parsed.referenceTitle || parsed.searchText.slice(0, 100),
-        include_adult: "false",
-      });
-      const seedIds = (search.results ?? []).slice(0, 10).map((r) => String(r.id));
-      await Promise.all(seedIds.map((id) => ensureEmbedding(id).catch(() => false)));
-    } catch { /* non-fatal */ }
-
-    // 3. KNN
-    const matches = await knn(queryEmbedding, 24, referenceMovie?.id);
-
-    // 4. Hydrate + apply hard filters
-    const hydrated = (await Promise.all(matches.map(async (m) => {
-      const movie = await hydrateMovie(m.tmdb_id);
-      if (!movie) return null;
-      if (parsed.yearMin && movie.year && movie.year < parsed.yearMin) return null;
-      if (parsed.yearMax && movie.year && movie.year > parsed.yearMax) return null;
-      if (parsed.minRating && movie.rating < parsed.minRating) return null;
-      if (parsed.genres.length > 0 && !parsed.genres.some((g) => (movie.genres as string[]).includes(g))) return null;
-      return { movie, similarity: m.similarity } as { movie: Movie; similarity: number };
-    }))).filter((x): x is { movie: Movie; similarity: number } => Boolean(x));
-
-    const matchesWithReason: SemanticMatch[] = hydrated.slice(0, 18).map((h) => {
-      const parts: string[] = [];
-      if (referenceMovie) parts.push(`Like ${referenceMovie.title}`);
-      if (parsed.mood) parts.push(parsed.mood);
-      const sharedGenres = parsed.genres.filter((g) => (h.movie.genres as string[]).includes(g));
-      if (sharedGenres.length) parts.push(sharedGenres.slice(0, 2).join(" · "));
-      parts.push(`${Math.round(h.similarity * 100)}% semantic match`);
-      return { movie: h.movie, similarity: h.similarity, reason: parts.join(" — ") };
-    });
 
     const bits: string[] = [];
-    if (referenceMovie) bits.push(`similar in feel to ${referenceMovie.title}`);
+    if (parsed.referenceTitle) bits.push(`in the spirit of ${parsed.referenceTitle}`);
     if (parsed.mood) bits.push(parsed.mood);
     if (parsed.genres.length) bits.push(parsed.genres.slice(0, 2).join(" & "));
     if (parsed.yearMin || parsed.yearMax) bits.push(`${parsed.yearMin ?? "…"}–${parsed.yearMax ?? "…"}`);
     if (parsed.minRating) bits.push(`≥ ${parsed.minRating}/10`);
     const summary = bits.length
-      ? `Found ${matchesWithReason.length} matches — ${bits.join(", ")}.`
-      : `Found ${matchesWithReason.length} semantic matches.`;
+      ? `${matches.length} picks — ${bits.join(", ")}.`
+      : `${matches.length} picks matched your request.`;
 
-    return { parsed, matches: matchesWithReason, summary };
+    return { parsed, matches: matches.slice(0, 18), summary };
   });
