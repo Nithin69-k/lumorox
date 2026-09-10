@@ -36,6 +36,11 @@ export const Route = createFileRoute("/sitemap.xml")({
           { path: "/mood", changefreq: "weekly", priority: "0.7" },
           { path: "/ask", changefreq: "weekly", priority: "0.8" },
           { path: "/watchlist", changefreq: "monthly", priority: "0.5" },
+          ...[...new Set(MOVIES.flatMap((m) => m.genres))].map((g) => ({
+            path: `/genre/${encodeURIComponent(String(g).toLowerCase().replace(/\s+/g, "-"))}`,
+            changefreq: "daily" as const,
+            priority: "0.9",
+          })),
           ...MOVIES.map((m) => ({ path: `/movie/${m.id}`, changefreq: "monthly" as const, priority: "0.6" })),
         ];
 
