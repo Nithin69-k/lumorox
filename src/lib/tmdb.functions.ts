@@ -231,16 +231,42 @@ export const getByGenre = createServerFn({ method: "GET" })
     }, () => fbByGenre(data.genre));
   });
 
+/**
+ * Per-mood tuning. Plain genre-union discovery returns whatever is popular,
+ * which is why "sad" used to surface comedies. Each mood now pins the genres
+ * that define it, excludes the ones that break the feeling, and sorts by
+ * acclaim so the picks actually fit the mood.
+ */
+const MOOD_TUNING: Record<string, { with: string; without?: string; sort: string; minVotes: number }> = {
+  happy:       { with: "35,10751", without: "27,53,10752,80,18", sort: "vote_average.desc", minVotes: 800 },
+  sad:         { with: "18",       without: "35,28,27,10751",     sort: "vote_average.desc", minVotes: 700 },
+  excited:     { with: "28,12",    without: "99,10402",           sort: "popularity.desc",   minVotes: 500 },
+  romantic:    { with: "10749",    without: "27,53,10752",        sort: "vote_average.desc", minVotes: 400 },
+  thriller:    { with: "53,9648",  without: "35,16,10751",        sort: "vote_average.desc", minVotes: 600 },
+  action:      { with: "28",       without: "35,10751,99",        sort: "popularity.desc",   minVotes: 500 },
+  horror:      { with: "27",       without: "35,10751,16",        sort: "vote_average.desc", minVotes: 400 },
+  mindbending: { with: "878,9648", without: "35,10751",           sort: "vote_average.desc", minVotes: 900 },
+};
+
 export const getMoodMovies = createServerFn({ method: "GET" })
-  .inputValidator((d: { genres: string[] }) => z.object({ genres: z.array(z.string()) }).parse(d))
+  .inputValidator((d: { genres: string[]; mood?: string }) =>
+    z.object({ genres: z.array(z.string()), mood: z.string().optional() }).parse(d))
   .handler(async ({ data }) => {
-    const ids = data.genres.map((g) => GENRE_NAME_TO_ID[g]).filter(Boolean).join("|");
-    if (!ids) return fbByGenres(data.genres);
+    const tune = data.mood ? MOOD_TUNING[data.mood] : undefined;
+    const ids = data.genres.map((g) => GENRE_NAME_TO_ID[g]).filter(Boolean).join(",");
+    if (!tune && !ids) return fbByGenres(data.genres);
     return safe(async () => {
-      const res = await tmdb<{ results: TmdbListItem[] }>("/discover/movie", {
-        with_genres: ids, sort_by: "popularity.desc", "vote_count.gte": 100,
-      });
-      const list = normalizeList(res.results);
+      const pages = await Promise.all([1, 2].map((page) =>
+        tmdb<{ results: TmdbListItem[] }>("/discover/movie", {
+          with_genres: tune?.with ?? ids,
+          without_genres: tune?.without,
+          sort_by: tune?.sort ?? "popularity.desc",
+          "vote_count.gte": tune?.minVotes ?? 100,
+          include_adult: "false",
+          page,
+        }).catch(() => ({ results: [] as TmdbListItem[] })),
+      ));
+      const list = normalizeList(pages.flatMap((p) => p.results));
       return list.length ? list : fbByGenres(data.genres);
     }, () => fbByGenres(data.genres));
   });
