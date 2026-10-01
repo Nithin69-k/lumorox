@@ -375,7 +375,8 @@ async function resolveTitle(s: Suggestion): Promise<Movie | null> {
 /** Discover-based top-up so a thin LLM answer still fills the grid. */
 async function discoverFallback(parsed: ParsedQuery, limit: number): Promise<Movie[]> {
   try {
-    const genreIds = parsed.genres.map((g) => GENRE_NAME_TO_ID[g]).filter(Boolean).join(",");
+    // OR the genres — ANDing them ("sci-fi AND mystery") returns almost nothing.
+    const genreIds = parsed.genres.map((g) => GENRE_NAME_TO_ID[g]).filter(Boolean).join("|");
     const res = await tmdbFetch<{ results: TmdbListItem[] }>("/discover/movie", {
       with_genres: genreIds || undefined,
       with_original_language: parsed.language ?? undefined,
