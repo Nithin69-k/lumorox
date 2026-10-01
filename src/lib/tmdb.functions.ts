@@ -281,14 +281,39 @@ export const discoverMovies = createServerFn({ method: "GET" })
       sort: z.string().optional(),
     }).parse(d))
   .handler(async ({ data }) => safe(async () => {
-    if (data.q && data.q.trim()) {
-      const res = await tmdb<{ results: TmdbListItem[] }>("/search/movie", {
-        query: data.q, include_adult: "false",
-      });
-      let list = normalizeList(res.results);
+    const term = data.q?.trim();
+    if (term) {
+      // Search movies, series and people in parallel, over two pages each, so a
+      // typed title, an actor or a director all return what the user expects.
+      const [m1, m2, tvRes, personRes] = await Promise.all([
+        tmdb<{ results: TmdbListItem[] }>("/search/movie", { query: term, include_adult: "false", page: 1 }).catch(() => ({ results: [] as TmdbListItem[] })),
+        tmdb<{ results: TmdbListItem[] }>("/search/movie", { query: term, include_adult: "false", page: 2 }).catch(() => ({ results: [] as TmdbListItem[] })),
+        tmdb<{ results: TmdbListItem[] }>("/search/tv", { query: term, include_adult: "false" }).catch(() => ({ results: [] as TmdbListItem[] })),
+        tmdb<{ results: { known_for?: TmdbListItem[] }[] }>("/search/person", { query: term, include_adult: "false" }).catch(() => ({ results: [] as { known_for?: TmdbListItem[] }[] })),
+      ]);
+      const tvList = normalizeList(tvRes.results).map((m) => ({ ...m, id: `tv-${m.id}` }));
+      const peopleWorks = normalizeList((personRes.results ?? []).slice(0, 3).flatMap((p) => p.known_for ?? []));
+      const seen = new Set<string>();
+      let list = [...normalizeList([...m1.results, ...m2.results]), ...tvList, ...peopleWorks]
+        .filter((m) => (seen.has(m.id) ? false : (seen.add(m.id), true)));
+
       if (data.genre) list = list.filter((m) => m.genres.includes(data.genre as Genre));
       if (data.year) list = list.filter((m) => String(m.year) === data.year);
       if (data.min) list = list.filter((m) => m.rating >= (data.min ?? 0));
+
+      // Relevance first when the user hasn't chosen an explicit sort order.
+      if (!data.sort || data.sort === "popularity") {
+        const want = term.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+        const rel = (m: Movie) => {
+          const t = m.title.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+          let s = 0;
+          if (t === want) s += 1000;
+          else if (t.startsWith(want)) s += 600;
+          else if (t.includes(want)) s += 300;
+          return s + Math.min(100, m.popularity) + m.rating * 5;
+        };
+        return list.sort((a, b) => rel(b) - rel(a));
+      }
       return sortList(list, data.sort);
     }
     const sortMap: Record<string, string> = {
