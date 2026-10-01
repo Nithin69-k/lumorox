@@ -19,7 +19,7 @@ export const Route = createFileRoute("/genre/$genre")({
     }
     const g = loaderData.genre;
     const lg = g.toLowerCase();
-    const url = `https://lumorox.lovable.app/genre/${params.genre}`;
+    const url = `https://lumorox.vercel.app/genre/${params.genre}`;
     const title = `${g} Movies & TV Shows — New Releases First | LumoroX AI`;
     const description = `Watch every ${lg} movie, TV series and show ordered newest to oldest — ratings, reviews, synopses, cast, crew and trailers for ${lg} titles worldwide.`;
     return {
@@ -45,7 +45,7 @@ export const Route = createFileRoute("/genre/$genre")({
             name: `${g} Movies & TV Shows`,
             url,
             description,
-            isPartOf: { "@type": "WebSite", name: "LumoroX AI", url: "https://lumorox.lovable.app/" },
+            isPartOf: { "@type": "WebSite", name: "LumoroX AI", url: "https://lumorox.vercel.app/" },
             about: { "@type": "Thing", name: `${g} genre` },
           }),
         },
@@ -55,8 +55,8 @@ export const Route = createFileRoute("/genre/$genre")({
             "@context": "https://schema.org",
             "@type": "BreadcrumbList",
             itemListElement: [
-              { "@type": "ListItem", position: 1, name: "Home", item: "https://lumorox.lovable.app/" },
-              { "@type": "ListItem", position: 2, name: "Genres", item: "https://lumorox.lovable.app/search" },
+              { "@type": "ListItem", position: 1, name: "Home", item: "https://lumorox.vercel.app/" },
+              { "@type": "ListItem", position: 2, name: "Genres", item: "https://lumorox.vercel.app/search" },
               { "@type": "ListItem", position: 3, name: g, item: url },
             ],
           }),

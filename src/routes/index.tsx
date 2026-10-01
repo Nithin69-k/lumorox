@@ -75,9 +75,9 @@ export const Route = createFileRoute("/")({
       { name: "description", content: "Trending, top rated, and personalized movie recommendations powered by TMDB." },
       { property: "og:title", content: "LumoroX AI — Discover Your Next Favorite Movie" },
       { property: "og:description", content: "Trending, top rated, and personalized movie recommendations." },
-      { property: "og:url", content: "https://lumorox.lovable.app/" },
+      { property: "og:url", content: "https://lumorox.vercel.app/" },
     ],
-    links: [{ rel: "canonical", href: "https://lumorox.lovable.app/" }],
+    links: [{ rel: "canonical", href: "https://lumorox.vercel.app/" }],
   }),
   loader: ({ context }) => {
     context.queryClient.ensureQueryData(trendingOpts);

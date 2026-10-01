@@ -50,7 +50,7 @@ export const Route = createFileRoute("/movie/$id")({
   },
   head: ({ loaderData, params }) => {
     if (!loaderData) return { meta: [{ title: "Movie — LumoroX AI" }] };
-    const url = `https://lumorox.lovable.app/movie/${params.id}`;
+    const url = `https://lumorox.vercel.app/movie/${params.id}`;
     const d = loaderData;
     const title = `${d.title} (${d.year}) — Review, Trailer & Synopsis | LumoroX AI`;
     const description =
@@ -97,8 +97,8 @@ export const Route = createFileRoute("/movie/$id")({
       "@context": "https://schema.org",
       "@type": "BreadcrumbList",
       itemListElement: [
-        { "@type": "ListItem", position: 1, name: "Home", item: "https://lumorox.lovable.app/" },
-        { "@type": "ListItem", position: 2, name: "Movies", item: "https://lumorox.lovable.app/search" },
+        { "@type": "ListItem", position: 1, name: "Home", item: "https://lumorox.vercel.app/" },
+        { "@type": "ListItem", position: 2, name: "Movies", item: "https://lumorox.vercel.app/search" },
         { "@type": "ListItem", position: 3, name: d.title, item: url },
       ],
     };
