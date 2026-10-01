@@ -312,6 +312,7 @@ export const discoverMovies = createServerFn({ method: "GET" })
           if (t === want) s += 1000;
           else if (t.startsWith(want)) s += 600;
           else if (t.includes(want)) s += 300;
+          if (byPerson.has(m.id)) s += 450;
           return s + Math.min(100, m.popularity) + m.rating * 5;
         };
         return list.sort((a, b) => rel(b) - rel(a));
