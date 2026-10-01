@@ -293,8 +293,10 @@ export const discoverMovies = createServerFn({ method: "GET" })
       ]);
       const tvList = normalizeList(tvRes.results).map((m) => ({ ...m, id: `tv-${m.id}` }));
       const peopleWorks = normalizeList((personRes.results ?? []).slice(0, 3).flatMap((p) => p.known_for ?? []));
+      // Searching a director or actor should surface their films, not documentaries about them.
+      const byPerson = new Set(peopleWorks.map((m) => m.id));
       const seen = new Set<string>();
-      let list = [...normalizeList([...m1.results, ...m2.results]), ...tvList, ...peopleWorks]
+      let list = [...peopleWorks, ...normalizeList([...m1.results, ...m2.results]), ...tvList]
         .filter((m) => (seen.has(m.id) ? false : (seen.add(m.id), true)));
 
       if (data.genre) list = list.filter((m) => m.genres.includes(data.genre as Genre));
