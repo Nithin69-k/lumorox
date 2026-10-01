@@ -375,7 +375,8 @@ async function resolveTitle(s: Suggestion): Promise<Movie | null> {
 /** Discover-based top-up so a thin LLM answer still fills the grid. */
 async function discoverFallback(parsed: ParsedQuery, limit: number): Promise<Movie[]> {
   try {
-    const genreIds = parsed.genres.map((g) => GENRE_NAME_TO_ID[g]).filter(Boolean).join(",");
+    // OR the genres — ANDing them ("sci-fi AND mystery") returns almost nothing.
+    const genreIds = parsed.genres.map((g) => GENRE_NAME_TO_ID[g]).filter(Boolean).join("|");
     const res = await tmdbFetch<{ results: TmdbListItem[] }>("/discover/movie", {
       with_genres: genreIds || undefined,
       with_original_language: parsed.language ?? undefined,
@@ -416,12 +417,12 @@ export const askAi = createServerFn({ method: "POST" })
       const { movie, why } = r;
       if (seen.has(movie.id)) continue;
       if (refNorm && norm(movie.title) === refNorm) continue;
-      // Hard constraints the user stated explicitly.
-      if (parsed.yearMin && movie.year && movie.year < parsed.yearMin) continue;
-      if (parsed.yearMax && movie.year && movie.year > parsed.yearMax) continue;
-      if (parsed.minRating && movie.rating && movie.rating < parsed.minRating) continue;
-      if (parsed.genres.length > 0 && movie.genres.length > 0
-        && !parsed.genres.some((g) => (movie.genres as string[]).includes(g))) continue;
+      // Constraints the user stated explicitly, with a little slack: the model
+      // picked these on purpose, so a title half a point under the asked rating
+      // or a year on the boundary still belongs in the answer.
+      if (parsed.yearMin && movie.year && movie.year < parsed.yearMin - 1) continue;
+      if (parsed.yearMax && movie.year && movie.year > parsed.yearMax + 1) continue;
+      if (parsed.minRating && movie.rating && movie.rating < parsed.minRating - 0.6) continue;
       seen.add(movie.id);
       const bits: string[] = [];
       if (why) bits.push(why);

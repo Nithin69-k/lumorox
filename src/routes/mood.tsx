@@ -14,9 +14,9 @@ export const Route = createFileRoute("/mood")({
       { title: "Mood Recommendations — LumoroX AI" },
       { name: "description", content: "Pick a mood and get instant cinematic recommendations curated for the feeling." },
       { property: "og:title", content: "Mood Recommendations — LumoroX AI" },
-      { property: "og:url", content: "https://lumorox.lovable.app/mood" },
+      { property: "og:url", content: "https://lumorox.vercel.app/mood" },
     ],
-    links: [{ rel: "canonical", href: "https://lumorox.lovable.app/mood" }],
+    links: [{ rel: "canonical", href: "https://lumorox.vercel.app/mood" }],
   }),
   component: MoodPage,
 });
@@ -26,7 +26,7 @@ function MoodPage() {
   const def = MOODS.find((m) => m.id === mood)!;
   const { data: list = [], isFetching } = useQuery({
     queryKey: ["tmdb", "mood", mood],
-    queryFn: () => getMoodMovies({ data: { genres: [...def.genres] } }),
+    queryFn: () => getMoodMovies({ data: { genres: [...def.genres], mood } }),
     staleTime: 10 * 60_000,
     placeholderData: (prev) => prev,
   });

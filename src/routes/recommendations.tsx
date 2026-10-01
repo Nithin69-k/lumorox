@@ -12,9 +12,9 @@ export const Route = createFileRoute("/recommendations")({
       { title: "Personalized Recommendations — LumoroX AI" },
       { name: "description", content: "Recommendations tuned to your taste with content-based scoring and explainable reasons." },
       { property: "og:title", content: "Personalized Recommendations — LumoroX AI" },
-      { property: "og:url", content: "https://lumorox.lovable.app/recommendations" },
+      { property: "og:url", content: "https://lumorox.vercel.app/recommendations" },
     ],
-    links: [{ rel: "canonical", href: "https://lumorox.lovable.app/recommendations" }],
+    links: [{ rel: "canonical", href: "https://lumorox.vercel.app/recommendations" }],
   }),
   component: RecPage,
 });

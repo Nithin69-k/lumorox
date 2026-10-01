@@ -281,14 +281,44 @@ export const discoverMovies = createServerFn({ method: "GET" })
       sort: z.string().optional(),
     }).parse(d))
   .handler(async ({ data }) => safe(async () => {
-    if (data.q && data.q.trim()) {
-      const res = await tmdb<{ results: TmdbListItem[] }>("/search/movie", {
-        query: data.q, include_adult: "false",
-      });
-      let list = normalizeList(res.results);
+    const term = data.q?.trim();
+    if (term) {
+      // Search movies, series and people in parallel, over two pages each, so a
+      // typed title, an actor or a director all return what the user expects.
+      const [m1, m2, tvRes, personRes] = await Promise.all([
+        tmdb<{ results: TmdbListItem[] }>("/search/movie", { query: term, include_adult: "false", page: 1 }).catch(() => ({ results: [] as TmdbListItem[] })),
+        tmdb<{ results: TmdbListItem[] }>("/search/movie", { query: term, include_adult: "false", page: 2 }).catch(() => ({ results: [] as TmdbListItem[] })),
+        tmdb<{ results: TmdbListItem[] }>("/search/tv", { query: term, include_adult: "false" }).catch(() => ({ results: [] as TmdbListItem[] })),
+        tmdb<{ results: { known_for?: TmdbListItem[] }[] }>("/search/person", { query: term, include_adult: "false" }).catch(() => ({ results: [] as { known_for?: TmdbListItem[] }[] })),
+      ]);
+      const tvList = normalizeList(tvRes.results).map((m) => ({ ...m, id: `tv-${m.id}` }));
+      const peopleWorks = normalizeList((personRes.results ?? []).slice(0, 3).flatMap((p) => p.known_for ?? []));
+      // Searching a director or actor should surface their films, not documentaries about them.
+      const byPerson = new Set(peopleWorks.map((m) => m.id));
+      const seen = new Set<string>();
+      let list = [...peopleWorks, ...normalizeList([...m1.results, ...m2.results]), ...tvList]
+        .filter((m) => (seen.has(m.id) ? false : (seen.add(m.id), true)));
+
       if (data.genre) list = list.filter((m) => m.genres.includes(data.genre as Genre));
       if (data.year) list = list.filter((m) => String(m.year) === data.year);
       if (data.min) list = list.filter((m) => m.rating >= (data.min ?? 0));
+
+      // Relevance first when the user hasn't chosen an explicit sort order.
+      if (!data.sort || data.sort === "popularity") {
+        const want = term.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+        const rel = (m: Movie) => {
+          const t = m.title.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+          let s = 0;
+          if (t === want) s += 1000;
+          else if (t.startsWith(want)) s += 600;
+          else if (t.includes(want)) s += 300;
+          if (byPerson.has(m.id)) s += 900;
+          // A documentary *about* the searched name is rarely what was wanted.
+          if (byPerson.size > 0 && (m.genres as string[]).includes("Documentary")) s -= 400;
+          return s + Math.min(100, m.popularity) + m.rating * 5;
+        };
+        return list.sort((a, b) => rel(b) - rel(a));
+      }
       return sortList(list, data.sort);
     }
     const sortMap: Record<string, string> = {
@@ -551,22 +581,35 @@ export const getPersonalizedRecommendations = createServerFn({ method: "POST" })
     // 1. Fetch seed details (enriched) in parallel
     const seeds = (await Promise.all(seedIds.map((id) => fetchDetails(id)))).filter((m): m is Movie => Boolean(m));
 
-    // 2. Fetch TMDB recommendations for each seed in parallel
+    // 2. Pull both TMDB's recommendation graph and its "similar" graph for each
+    //    seed, TV-aware, so series seeds also contribute instead of silently failing.
     const recLists = await Promise.all(
-      seedIds.map(async (id) => {
-        try {
-          const res = await tmdb<{ results: TmdbListItem[] }>(`/movie/${id}/recommendations`);
-          return normalizeList(res.results);
-        } catch { return [] as Movie[]; }
+      seedIds.flatMap((id) => {
+        const base = `${isTvId(id) ? "/tv" : "/movie"}/${rawId(id)}`;
+        const tv = isTvId(id);
+        return ["recommendations", "similar"].map(async (kind) => {
+          try {
+            const res = await tmdb<{ results: TmdbListItem[] }>(`${base}/${kind}`);
+            const list = normalizeList(res.results);
+            return tv ? list.map((m) => ({ ...m, id: `tv-${m.id}` })) : list;
+          } catch { return [] as Movie[]; }
+        });
       }),
     );
 
-    // 3. Merge unique, filter blocked
+    // 3. Merge unique, drop anything already seen/liked/disliked, and drop
+    //    genres the user has actively thumbed down.
     const blocked = new Set([...data.dislikes, ...data.likes, ...data.watchlist]);
+    const dislikedSeeds = (await Promise.all(data.dislikes.slice(0, 6).map((id) => fetchDetails(id))))
+      .filter((m): m is Movie => Boolean(m));
+    const dislikedGenres = new Set(dislikedSeeds.flatMap((m) => m.genres as string[]));
+    const likedGenres = new Set(seeds.flatMap((m) => m.genres as string[]));
+    for (const g of likedGenres) dislikedGenres.delete(g);
     const merged = new Map<string, Movie>();
     for (const list of recLists) {
       for (const m of list) {
         if (blocked.has(m.id) || merged.has(m.id)) continue;
+        if (m.genres.length > 0 && m.genres.every((g) => dislikedGenres.has(g as string))) continue;
         merged.set(m.id, m);
       }
     }

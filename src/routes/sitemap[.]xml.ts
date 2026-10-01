@@ -13,7 +13,7 @@ function baseUrl(request: Request): string {
   } catch {
     /* fall through */
   }
-  return "https://lumorox.lovable.app";
+  return "https://lumorox.vercel.app";
 }
 
 

@@ -12,7 +12,7 @@ export function JsonLd({ data }: { data: unknown }) {
   );
 }
 
-const SITE = "https://lumorox.lovable.app";
+const SITE = "https://lumorox.vercel.app";
 
 /** schema.org ItemList of movie/TV entries, in display order. */
 export function itemListSchema(
