@@ -576,22 +576,35 @@ export const getPersonalizedRecommendations = createServerFn({ method: "POST" })
     // 1. Fetch seed details (enriched) in parallel
     const seeds = (await Promise.all(seedIds.map((id) => fetchDetails(id)))).filter((m): m is Movie => Boolean(m));
 
-    // 2. Fetch TMDB recommendations for each seed in parallel
+    // 2. Pull both TMDB's recommendation graph and its "similar" graph for each
+    //    seed, TV-aware, so series seeds also contribute instead of silently failing.
     const recLists = await Promise.all(
-      seedIds.map(async (id) => {
-        try {
-          const res = await tmdb<{ results: TmdbListItem[] }>(`/movie/${id}/recommendations`);
-          return normalizeList(res.results);
-        } catch { return [] as Movie[]; }
+      seedIds.flatMap((id) => {
+        const base = `${isTvId(id) ? "/tv" : "/movie"}/${rawId(id)}`;
+        const tv = isTvId(id);
+        return ["recommendations", "similar"].map(async (kind) => {
+          try {
+            const res = await tmdb<{ results: TmdbListItem[] }>(`${base}/${kind}`);
+            const list = normalizeList(res.results);
+            return tv ? list.map((m) => ({ ...m, id: `tv-${m.id}` })) : list;
+          } catch { return [] as Movie[]; }
+        });
       }),
     );
 
-    // 3. Merge unique, filter blocked
+    // 3. Merge unique, drop anything already seen/liked/disliked, and drop
+    //    genres the user has actively thumbed down.
     const blocked = new Set([...data.dislikes, ...data.likes, ...data.watchlist]);
+    const dislikedSeeds = (await Promise.all(data.dislikes.slice(0, 6).map((id) => fetchDetails(id))))
+      .filter((m): m is Movie => Boolean(m));
+    const dislikedGenres = new Set(dislikedSeeds.flatMap((m) => m.genres as string[]));
+    const likedGenres = new Set(seeds.flatMap((m) => m.genres as string[]));
+    for (const g of likedGenres) dislikedGenres.delete(g);
     const merged = new Map<string, Movie>();
     for (const list of recLists) {
       for (const m of list) {
         if (blocked.has(m.id) || merged.has(m.id)) continue;
+        if (m.genres.length > 0 && m.genres.every((g) => dislikedGenres.has(g as string))) continue;
         merged.set(m.id, m);
       }
     }
