@@ -312,7 +312,9 @@ export const discoverMovies = createServerFn({ method: "GET" })
           if (t === want) s += 1000;
           else if (t.startsWith(want)) s += 600;
           else if (t.includes(want)) s += 300;
-          if (byPerson.has(m.id)) s += 450;
+          if (byPerson.has(m.id)) s += 900;
+          // A documentary *about* the searched name is rarely what was wanted.
+          if (byPerson.size > 0 && (m.genres as string[]).includes("Documentary")) s -= 400;
           return s + Math.min(100, m.popularity) + m.rating * 5;
         };
         return list.sort((a, b) => rel(b) - rel(a));
