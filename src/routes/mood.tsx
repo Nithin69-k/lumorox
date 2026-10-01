@@ -26,7 +26,7 @@ function MoodPage() {
   const def = MOODS.find((m) => m.id === mood)!;
   const { data: list = [], isFetching } = useQuery({
     queryKey: ["tmdb", "mood", mood],
-    queryFn: () => getMoodMovies({ data: { genres: [...def.genres] } }),
+    queryFn: () => getMoodMovies({ data: { genres: [...def.genres], mood } }),
     staleTime: 10 * 60_000,
     placeholderData: (prev) => prev,
   });
