@@ -853,7 +853,20 @@ export const getMovieCredits = createServerFn({ method: "GET" })
           role: c.job || c.department || "Crew",
           profileUrl: c.profile_path ? `${IMG}/w185${c.profile_path}` : null,
         }));
-      return { cast, crew };
+      // Merge cast + crew into one entry per person (e.g. "Director · Hero").
+      const byPerson = new Map<string, CreditPerson & { roles: string[] }>();
+      for (const p of [...cast, ...crew]) {
+        const pid = p.id.split("-")[1];
+        const ex = byPerson.get(pid);
+        if (ex) {
+          if (!ex.roles.includes(p.role)) ex.roles.push(p.role);
+          if (!ex.profileUrl && p.profileUrl) ex.profileUrl = p.profileUrl;
+        } else {
+          byPerson.set(pid, { ...p, id: `person-${pid}`, roles: [p.role] });
+        }
+      }
+      const people = [...byPerson.values()].map(({ roles, ...p }) => ({ ...p, role: roles.join(" · ") }));
+      return { cast: people, crew: [] };
     } catch {
       return { cast: [], crew: [] };
     }

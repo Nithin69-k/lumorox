@@ -376,8 +376,7 @@ function MoviePage() {
 
       {(credits?.cast?.length || credits?.crew?.length) ? (
         <div className="container mx-auto mt-16 w-full min-w-0 px-4">
-          <PeopleSection title="Top Cast" people={credits?.cast ?? []} />
-          <PeopleSection title="Crew" people={credits?.crew ?? []} />
+          <PeopleSection title="Cast & Crew" people={[...(credits?.cast ?? []), ...(credits?.crew ?? [])]} />
         </div>
       ) : null}
 
@@ -484,7 +483,7 @@ function PeopleSection({ title, people }: { title: string; people: CreditPerson[
     <section className="mt-10 first:mt-0" aria-label={title}>
       <h2 className="text-gradient font-display text-2xl tracking-wide sm:text-3xl">{title}</h2>
       <div className="accent-rule mt-2" />
-      <ul className="mt-5 grid w-full grid-cols-3 gap-3 sm:grid-cols-4 sm:gap-4 md:grid-cols-6 lg:grid-cols-8">
+      <ul className="mt-5 grid w-full min-w-0 grid-cols-3 gap-2.5 sm:grid-cols-4 sm:gap-4 md:grid-cols-6 lg:grid-cols-8">
         {people.map((p) => (
           <li key={p.id} className="min-w-0">
             <div className="aspect-[2/3] overflow-hidden rounded-xl bg-secondary ring-1 ring-white/5">
