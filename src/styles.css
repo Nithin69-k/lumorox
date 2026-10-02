@@ -167,7 +167,12 @@
       radial-gradient(34% 40% at 82% 8%, oklch(0.6 0.18 300 / 0.16), transparent 70%),
       radial-gradient(40% 44% at 60% 92%, oklch(0.7 0.15 200 / 0.12), transparent 70%);
     filter: blur(20px);
+    will-change: transform;
+    transform: translateZ(0);
     animation: aurora-drift 22s ease-in-out infinite;
+  }
+  @media (max-width: 640px) {
+    &::before { filter: none; animation-duration: 30s; }
   }
 }
 

@@ -11,6 +11,12 @@ export const getRouter = () => {
         staleTime: 15 * 60_000,
         refetchOnWindowFocus: true,
         refetchOnReconnect: true,
+        // Background refresh every 30 min so open tabs stay current without reloads.
+        refetchInterval: 30 * 60_000,
+        refetchIntervalInBackground: false,
+        // Keep showing the previous data while a refresh is in flight (no flicker).
+        placeholderData: (prev: unknown) => prev,
+        retry: 1,
       },
     },
   });
@@ -19,6 +25,7 @@ export const getRouter = () => {
     routeTree,
     context: { queryClient },
     scrollRestoration: true,
+    defaultPreload: "intent",
     defaultPreloadStaleTime: 0,
   });
 
