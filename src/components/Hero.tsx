@@ -1,13 +1,22 @@
 import { Link } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { Play, Plus, Info, Star } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import type { Movie } from "@/data/movies";
 import { MoviePoster } from "./MoviePoster";
 import { useUserStore } from "@/store/user";
+import { getMovieDetails } from "@/lib/tmdb.functions";
 
 export function Hero({ movie }: { movie: Movie }) {
   const toggleWatchlist = useUserStore((s) => s.toggleWatchlist);
   const inWatchlist = useUserStore((s) => s.watchlist.includes(movie.id));
+  // List endpoints don't include runtime — fetch full details for the real length.
+  const { data: details } = useQuery({
+    queryKey: ["tmdb", "details", movie.id],
+    queryFn: () => getMovieDetails({ data: { id: movie.id } }),
+    staleTime: 15 * 60 * 1000,
+  });
+  const runtime = details?.runtime ?? movie.runtime;
 
   return (
     <section className="relative h-[88vh] min-h-[600px] w-full overflow-hidden">
