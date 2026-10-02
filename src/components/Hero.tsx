@@ -44,7 +44,9 @@ export function Hero({ movie }: { movie: Movie }) {
               <Star className="h-4 w-4 fill-current" /> {movie.rating.toFixed(1)}
             </span>
             <span>{movie.year}</span>
-            <span>{Math.floor(movie.runtime / 60)}h {movie.runtime % 60}m</span>
+            {runtime > 0 && (
+              <span>{Math.floor(runtime / 60)}h {runtime % 60}m</span>
+            )}
             <span className="hidden sm:inline">·</span>
             <span className="hidden sm:inline">{movie.genres.slice(0, 3).join(" · ")}</span>
           </div>
