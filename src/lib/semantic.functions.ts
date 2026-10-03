@@ -15,6 +15,51 @@ const TMDB_BASE = "https://api.themoviedb.org/3";
 const IMG = "https://image.tmdb.org/t/p";
 const AI_GATEWAY = "https://ai.gateway.lovable.dev/v1";
 
+// ============================================================================
+// Abuse protection for paid AI calls (this app has no sign-in, so anyone can
+// reach these endpoints). Legitimate use is unaffected:
+// - identical questions are served from a short-lived cache (repeats are free)
+// - new paid AI calls are capped per instance; beyond the cap we degrade to
+//   free TMDB discover results instead of spending more
+// - brand-new movie embeddings are capped per hour (existing ones stay free)
+// ============================================================================
+
+function makeWindowLimiter(max: number, windowMs: number) {
+  const log: number[] = [];
+  return (): boolean => {
+    const now = Date.now();
+    while (log.length && now - log[0]! > windowMs) log.shift();
+    if (log.length >= max) return false;
+    log.push(now);
+    return true;
+  };
+}
+
+const allowAiParse = makeWindowLimiter(20, 60_000); // 20 new AI questions/min
+const allowEmbedCreate = makeWindowLimiter(30, 3_600_000); // 30 new embeddings/hour
+
+const ASK_CACHE_TTL = 60 * 60_000;
+const ASK_CACHE_MAX = 200;
+const askCache = new Map<string, { at: number; result: AskResult }>();
+
+function askCacheGet(key: string): AskResult | null {
+  const hit = askCache.get(key);
+  if (!hit) return null;
+  if (Date.now() - hit.at > ASK_CACHE_TTL) {
+    askCache.delete(key);
+    return null;
+  }
+  return hit.result;
+}
+
+function askCacheSet(key: string, result: AskResult): void {
+  if (askCache.size >= ASK_CACHE_MAX) {
+    const oldest = askCache.keys().next().value;
+    if (oldest !== undefined) askCache.delete(oldest);
+  }
+  askCache.set(key, { at: Date.now(), result });
+}
+
 const GENRE_BY_ID: Record<number, Genre> = {
   28: "Action", 12: "Adventure", 16: "Animation", 35: "Comedy",
   80: "Crime", 18: "Drama", 10751: "Family", 14: "Fantasy",
