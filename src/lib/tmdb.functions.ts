@@ -29,6 +29,19 @@ export const GENRE_NAME_TO_ID: Record<string, number> = {
 // smooths bursty traffic (search typing, repeated route visits).
 interface CacheEntry { expires: number; data: unknown }
 const CACHE = new Map<string, CacheEntry>();
+
+// Tell Vercel's edge cache to serve these responses instantly for repeat
+// visitors (10 min fresh, then serve stale while revalidating in the
+// background). No-op outside a request context (e.g. prerender).
+function edgeCache(seconds = 600) {
+  try {
+    setResponseHeader("cache-control", `public, s-maxage=${seconds}, stale-while-revalidate=3600`);
+  } catch { /* not in a request context */ }
+}
+
+// Drop-in replacement for `safe` that also marks the response edge-cacheable.
+const cached = <T>(fn: () => Promise<T>, fb: () => T, seconds = 600): Promise<T> =>
+  safe(async () => { edgeCache(seconds); return fn(); }, fb);
 const MAX_ENTRIES = 500;
 
 // TTLs (ms) tuned per endpoint volatility. Kept short for "live" catalogue
