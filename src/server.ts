@@ -37,12 +37,24 @@ async function normalizeCatastrophicSsrResponse(response: Response): Promise<Res
   });
 }
 
+// GET server-function responses (the movie catalogue reads) are safe to cache
+// at the Vercel edge: 10 min fresh, then stale-while-revalidate for an hour.
+// This makes repeat visits and shared catalogue rows load instantly.
+function withEdgeCache(request: Request, response: Response): Response {
+  const url = new URL(request.url);
+  if (request.method !== "GET" || !url.pathname.startsWith("/_server")) return response;
+  if (!response.ok) return response;
+  const headers = new Headers(response.headers);
+  headers.set("cache-control", "public, s-maxage=600, stale-while-revalidate=3600");
+  return new Response(response.body, { status: response.status, headers });
+}
+
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
-      return await normalizeCatastrophicSsrResponse(response);
+      return await normalizeCatastrophicSsrResponse(withEdgeCache(request, response));
     } catch (error) {
       console.error(error);
       return new Response(renderErrorPage(), {
