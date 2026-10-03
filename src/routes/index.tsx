@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useSuspenseQuery, queryOptions } from "@tanstack/react-query";
-import { Suspense } from "react";
+import { Suspense, useEffect, useRef, useState, type ReactNode } from "react";
 import { MovieRow } from "@/components/MovieRow";
 import { MovieRowSkeleton } from "@/components/MovieCardSkeleton";
 import { Hero } from "@/components/Hero";
@@ -111,9 +111,9 @@ function HomePage() {
         <Suspense fallback={<MovieRowSkeleton title="New Movies" />}><LatestRow /></Suspense>
         <Suspense fallback={<MovieRowSkeleton title="Best This Month" />}><BestMonthRow /></Suspense>
         <Suspense fallback={<MovieRowSkeleton title="Popular Right Now" />}><PopularRow /></Suspense>
-        <Suspense fallback={<MovieRowSkeleton title="Top Rated" />}><TopRatedRow /></Suspense>
-        <Suspense fallback={<MovieRowSkeleton title="Best Movies of All Time" />}><AllTimeRow /></Suspense>
-        <Suspense fallback={<MovieRowSkeleton title="Coming Soon" />}><UpcomingRow /></Suspense>
+        <LazyRow fallback={<MovieRowSkeleton title="Top Rated" />}><Suspense fallback={<MovieRowSkeleton title="Top Rated" />}><TopRatedRow /></Suspense></LazyRow>
+        <LazyRow fallback={<MovieRowSkeleton title="Best Movies of All Time" />}><Suspense fallback={<MovieRowSkeleton title="Best Movies of All Time" />}><AllTimeRow /></Suspense></LazyRow>
+        <LazyRow fallback={<MovieRowSkeleton title="Coming Soon" />}><Suspense fallback={<MovieRowSkeleton title="Coming Soon" />}><UpcomingRow /></Suspense></LazyRow>
 
         <section aria-labelledby="region-releases" className="container mx-auto px-4 pt-8">
           <h2 id="region-releases" className="text-gradient font-display text-2xl tracking-wide sm:text-3xl">
@@ -125,21 +125,25 @@ function HomePage() {
           </p>
         </section>
         {REGION_ROWS.map((r) => (
-          <Suspense key={`${r.region}-${r.lang ?? "any"}`} fallback={<MovieRowSkeleton title={r.title} />}>
-            <RegionRow region={r.region} {...(r.lang ? { lang: r.lang } : {})} title={r.title} />
-          </Suspense>
+          <LazyRow key={`${r.region}-${r.lang ?? "any"}`} fallback={<MovieRowSkeleton title={r.title} />}>
+            <Suspense fallback={<MovieRowSkeleton title={r.title} />}>
+              <RegionRow region={r.region} {...(r.lang ? { lang: r.lang } : {})} title={r.title} />
+            </Suspense>
+          </LazyRow>
         ))}
 
         {LANGUAGE_ROWS.map((l) => (
-          <Suspense key={l.lang} fallback={<MovieRowSkeleton title={l.title} />}>
-            <LanguageRow lang={l.lang} title={l.title} />
-          </Suspense>
+          <LazyRow key={l.lang} fallback={<MovieRowSkeleton title={l.title} />}>
+            <Suspense fallback={<MovieRowSkeleton title={l.title} />}>
+              <LanguageRow lang={l.lang} title={l.title} />
+            </Suspense>
+          </LazyRow>
         ))}
 
-        <Suspense fallback={<MovieRowSkeleton title="Action & Adventure" />}><GenreRow genre="Action" title="Action & Adventure" /></Suspense>
-        <Suspense fallback={<MovieRowSkeleton title="Mind-Bending Sci-Fi" />}><GenreRow genre="Science Fiction" title="Mind-Bending Sci-Fi" /></Suspense>
-        <Suspense fallback={<MovieRowSkeleton title="Drama Spotlight" />}><GenreRow genre="Drama" title="Drama Spotlight" /></Suspense>
-        <Suspense fallback={<MovieRowSkeleton title="Animation Picks" />}><GenreRow genre="Animation" title="Animation Picks" /></Suspense>
+        <LazyRow fallback={<MovieRowSkeleton title="Action & Adventure" />}><Suspense fallback={<MovieRowSkeleton title="Action & Adventure" />}><GenreRow genre="Action" title="Action & Adventure" /></Suspense></LazyRow>
+        <LazyRow fallback={<MovieRowSkeleton title="Mind-Bending Sci-Fi" />}><Suspense fallback={<MovieRowSkeleton title="Mind-Bending Sci-Fi" />}><GenreRow genre="Science Fiction" title="Mind-Bending Sci-Fi" /></Suspense></LazyRow>
+        <LazyRow fallback={<MovieRowSkeleton title="Drama Spotlight" />}><Suspense fallback={<MovieRowSkeleton title="Drama Spotlight" />}><GenreRow genre="Drama" title="Drama Spotlight" /></Suspense></LazyRow>
+        <LazyRow fallback={<MovieRowSkeleton title="Animation Picks" />}><Suspense fallback={<MovieRowSkeleton title="Animation Picks" />}><GenreRow genre="Animation" title="Animation Picks" /></Suspense></LazyRow>
 
 
 
@@ -183,6 +187,30 @@ function HomePage() {
       </div>
     </>
   );
+}
+
+// Renders children (and fires their data fetches) only when the row scrolls
+// near the viewport, so the first screen on phones isn't competing with 30+
+// requests for rows the user hasn't reached yet.
+function LazyRow({ children, fallback }: { children: ReactNode; fallback: ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || visible) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) {
+          setVisible(true);
+          io.disconnect();
+        }
+      },
+      { rootMargin: "600px 0px" },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [visible]);
+  return <div ref={ref}>{visible ? children : fallback}</div>;
 }
 
 function NowPlayingRow() {

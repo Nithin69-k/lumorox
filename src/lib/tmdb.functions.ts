@@ -28,6 +28,7 @@ export const GENRE_NAME_TO_ID: Record<string, number> = {
 // smooths bursty traffic (search typing, repeated route visits).
 interface CacheEntry { expires: number; data: unknown }
 const CACHE = new Map<string, CacheEntry>();
+
 const MAX_ENTRIES = 500;
 
 // TTLs (ms) tuned per endpoint volatility. Kept short for "live" catalogue
