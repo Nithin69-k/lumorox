@@ -50,6 +50,8 @@
     "@tanstack/react-start": "1.168.60",
     "@tanstack/router-plugin": "1.168.42",
     "@tanstack/zod-adapter": "^1.167.0",
+    "baseline-browser-mapping": "^2.11.27",
+    "browserslist": "^4.29.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
@@ -96,9 +98,13 @@
     "vite": "^7.3.1"
   },
   "overrides": {
-    "js-yaml": "^4.3.0"
+    "js-yaml": "^4.3.2",
+    "browserslist": "^4.29.3",
+    "baseline-browser-mapping": "^2.11.27"
   },
   "resolutions": {
-    "js-yaml": "^4.3.0"
+    "js-yaml": "^4.3.2",
+    "browserslist": "^4.29.3",
+    "baseline-browser-mapping": "^2.11.27"
   }
 }
