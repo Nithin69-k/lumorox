@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { timingSafeEqual } from "crypto";
 
 /**
  * Daily catalogue refresh endpoint.
@@ -7,6 +8,11 @@ import { createFileRoute } from "@tanstack/react-router";
  * lists so the edge/runtime caches are warm with the newest titles before the
  * first visitor of the day arrives. It is safe to call at any time and never
  * returns user data.
+ *
+ * Secured with a shared secret: the caller must send
+ * `Authorization: Bearer <CRON_SECRET>` (Vercel Cron does this automatically
+ * when CRON_SECRET is set) or an `x-sync-secret` header matching
+ * VERCEL_SYNC_SECRET. Unauthenticated calls are rejected with 401.
  */
 const ENDPOINTS = [
   "/trending/movie/week",
@@ -16,7 +22,30 @@ const ENDPOINTS = [
   "/movie/upcoming",
 ] as const;
 
-async function refresh() {
+function safeEqual(a: string, b: string): boolean {
+  const ba = Buffer.from(a);
+  const bb = Buffer.from(b);
+  return ba.length === bb.length && timingSafeEqual(ba, bb);
+}
+
+function isAuthorized(request: Request): boolean {
+  const auth = request.headers.get("authorization") ?? "";
+  const bearer = auth.startsWith("Bearer ") ? auth.slice(7).trim() : "";
+  const cronSecret = process.env["CRON_SECRET"]?.trim();
+  if (cronSecret && bearer && safeEqual(bearer, cronSecret)) return true;
+
+  const syncSecret = process.env["VERCEL_SYNC_SECRET"]?.trim();
+  const provided = request.headers.get("x-sync-secret") ?? "";
+  if (syncSecret && provided && safeEqual(provided, syncSecret)) return true;
+
+  return false;
+}
+
+async function refresh(request: Request) {
+  if (!isAuthorized(request)) {
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const key = process.env["TMDB_API_KEY"]?.trim();
   const accessToken = process.env["TMDB_ACCESS_TOKEN"]?.trim();
   if (!key && !accessToken) {
@@ -63,8 +92,8 @@ async function refresh() {
 export const Route = createFileRoute("/api/public/hooks/refresh-catalog")({
   server: {
     handlers: {
-      GET: refresh,
-      POST: refresh,
+      GET: async ({ request }) => refresh(request),
+      POST: async ({ request }) => refresh(request),
     },
   },
 });
