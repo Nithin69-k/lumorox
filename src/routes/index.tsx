@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useSuspenseQuery, queryOptions } from "@tanstack/react-query";
-import { Suspense } from "react";
+import { Suspense, useEffect, useRef, useState, type ReactNode } from "react";
 import { MovieRow } from "@/components/MovieRow";
 import { MovieRowSkeleton } from "@/components/MovieCardSkeleton";
 import { Hero } from "@/components/Hero";
@@ -183,6 +183,30 @@ function HomePage() {
       </div>
     </>
   );
+}
+
+// Renders children (and fires their data fetches) only when the row scrolls
+// near the viewport, so the first screen on phones isn't competing with 30+
+// requests for rows the user hasn't reached yet.
+function LazyRow({ children, fallback }: { children: ReactNode; fallback: ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || visible) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) {
+          setVisible(true);
+          io.disconnect();
+        }
+      },
+      { rootMargin: "600px 0px" },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [visible]);
+  return <div ref={ref}>{visible ? children : fallback}</div>;
 }
 
 function NowPlayingRow() {
