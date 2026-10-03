@@ -41,7 +41,7 @@ function edgeCache(seconds = 600) {
 
 // Drop-in replacement for `safe` that also marks the response edge-cacheable.
 const cached = <T>(fn: () => Promise<T>, fb: () => T, seconds = 600): Promise<T> =>
-  safe(async () => { edgeCache(seconds); return fn(); }, fb);
+  cached(async () => { edgeCache(seconds); return fn(); }, fb);
 const MAX_ENTRIES = 500;
 
 // TTLs (ms) tuned per endpoint volatility. Kept short for "live" catalogue
@@ -173,7 +173,7 @@ function sortList(list: Movie[], sort?: string): Movie[] {
 }
 
 export const getTrending = createServerFn({ method: "GET" }).handler(async () =>
-  safe(async () => {
+  cached(async () => {
     const data = await tmdb<{ results: TmdbListItem[] }>("/trending/movie/week");
     const list = normalizeList(data.results);
     return list.length ? list : fbTrending();
@@ -181,7 +181,7 @@ export const getTrending = createServerFn({ method: "GET" }).handler(async () =>
 );
 
 export const getPopular = createServerFn({ method: "GET" }).handler(async () =>
-  safe(async () => {
+  cached(async () => {
     const data = await tmdb<{ results: TmdbListItem[] }>("/movie/popular");
     const list = normalizeList(data.results);
     return list.length ? list : fbPopular();
@@ -189,7 +189,7 @@ export const getPopular = createServerFn({ method: "GET" }).handler(async () =>
 );
 
 export const getTopRated = createServerFn({ method: "GET" }).handler(async () =>
-  safe(async () => {
+  cached(async () => {
     const data = await tmdb<{ results: TmdbListItem[] }>("/movie/top_rated");
     const list = normalizeList(data.results);
     return list.length ? list : fbTopRated();
@@ -197,7 +197,7 @@ export const getTopRated = createServerFn({ method: "GET" }).handler(async () =>
 );
 
 export const getUpcoming = createServerFn({ method: "GET" }).handler(async () =>
-  safe(async () => {
+  cached(async () => {
     const data = await tmdb<{ results: TmdbListItem[] }>("/movie/upcoming");
     const list = normalizeList(data.results);
     return list.length ? list : fbUpcoming();
@@ -206,7 +206,7 @@ export const getUpcoming = createServerFn({ method: "GET" }).handler(async () =>
 
 // Currently in cinemas
 export const getNowPlaying = createServerFn({ method: "GET" }).handler(async () =>
-  safe(async () => {
+  cached(async () => {
     const data = await tmdb<{ results: TmdbListItem[] }>("/movie/now_playing");
     const list = normalizeList(data.results);
     return list.length ? list : fbNewest();
@@ -215,7 +215,7 @@ export const getNowPlaying = createServerFn({ method: "GET" }).handler(async () 
 
 // Freshly released titles (last 60 days), newest first
 export const getLatestReleases = createServerFn({ method: "GET" }).handler(async () =>
-  safe(async () => {
+  cached(async () => {
   const today = new Date();
   const from = new Date(today.getTime() - 60 * 24 * 60 * 60_000);
   const iso = (d: Date) => d.toISOString().slice(0, 10);
@@ -236,7 +236,7 @@ export const getByGenre = createServerFn({ method: "GET" })
   .handler(async ({ data }) => {
     const id = GENRE_NAME_TO_ID[data.genre];
     if (!id) return fbByGenre(data.genre);
-    return safe(async () => {
+    return cached(async () => {
       const res = await tmdb<{ results: TmdbListItem[] }>("/discover/movie", {
         with_genres: id, sort_by: "popularity.desc", "vote_count.gte": 200,
       });
@@ -269,7 +269,7 @@ export const getMoodMovies = createServerFn({ method: "GET" })
     const tune = data.mood ? MOOD_TUNING[data.mood] : undefined;
     const ids = data.genres.map((g) => GENRE_NAME_TO_ID[g]).filter(Boolean).join(",");
     if (!tune && !ids) return fbByGenres(data.genres);
-    return safe(async () => {
+    return cached(async () => {
       const pages = await Promise.all([1, 2].map((page) =>
         tmdb<{ results: TmdbListItem[] }>("/discover/movie", {
           with_genres: tune?.with ?? ids,
@@ -294,7 +294,7 @@ export const discoverMovies = createServerFn({ method: "GET" })
       min: z.number().optional(),
       sort: z.string().optional(),
     }).parse(d))
-  .handler(async ({ data }) => safe(async () => {
+  .handler(async ({ data }) => cached(async () => {
     const term = data.q?.trim();
     if (term) {
       // Search movies, series and people in parallel, over two pages each, so a
@@ -662,7 +662,7 @@ const iso = (d: Date) => d.toISOString().slice(0, 10);
 
 /** Top 10 trending today, worldwide. */
 export const getTopTenToday = createServerFn({ method: "GET" }).handler(async () =>
-  safe(async () => {
+  cached(async () => {
     const data = await tmdb<{ results: TmdbListItem[] }>("/trending/movie/day");
     const list = normalizeList(data.results).slice(0, 10);
     return list.length ? list : fbTrending().slice(0, 10);
@@ -671,7 +671,7 @@ export const getTopTenToday = createServerFn({ method: "GET" }).handler(async ()
 
 /** Best rated releases of the last 30 days. */
 export const getBestThisMonth = createServerFn({ method: "GET" }).handler(async () =>
-  safe(async () => {
+  cached(async () => {
     const today = new Date();
     const from = new Date(today.getTime() - 30 * 24 * 60 * 60_000);
     const data = await tmdb<{ results: TmdbListItem[] }>("/discover/movie", {
@@ -688,7 +688,7 @@ export const getBestThisMonth = createServerFn({ method: "GET" }).handler(async 
 
 /** All-time greatest films (high vote count, high score). */
 export const getAllTimeBest = createServerFn({ method: "GET" }).handler(async () =>
-  safe(async () => {
+  cached(async () => {
     const data = await tmdb<{ results: TmdbListItem[] }>("/discover/movie", {
       sort_by: "vote_average.desc",
       "vote_count.gte": 5000,
@@ -707,7 +707,7 @@ export const getByLanguage = createServerFn({ method: "GET" })
   .inputValidator((d: { lang: string; window?: "recent" | "all" }) =>
     z.object({ lang: z.string().min(2).max(5), window: z.enum(["recent", "all"]).optional() }).parse(d))
   .handler(async ({ data }) =>
-    safe(async () => {
+    cached(async () => {
       const today = new Date();
       const from = new Date(today.getTime() - 365 * 24 * 60 * 60_000);
       const res = await tmdb<{ results: TmdbListItem[] }>("/discover/movie", {
@@ -795,7 +795,7 @@ export const getRecentByRegion = createServerFn({ method: "GET" })
   .inputValidator((d: { region: string; lang?: string }) =>
     z.object({ region: z.string().min(2).max(2), lang: z.string().min(2).max(5).optional() }).parse(d))
   .handler(async ({ data }) =>
-    safe(async () => {
+    cached(async () => {
       const today = new Date();
       const from = new Date(today.getTime() - 120 * 24 * 60 * 60_000);
       const res = await tmdb<{ results: TmdbListItem[] }>("/discover/movie", {
