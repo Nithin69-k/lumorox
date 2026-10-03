@@ -98,9 +98,13 @@
     "vite": "^7.3.1"
   },
   "overrides": {
-    "js-yaml": "^4.3.2"
+    "js-yaml": "^4.3.2",
+    "browserslist": "^4.29.3",
+    "baseline-browser-mapping": "^2.11.27"
   },
   "resolutions": {
-    "js-yaml": "^4.3.2"
+    "js-yaml": "^4.3.2",
+    "browserslist": "^4.29.3",
+    "baseline-browser-mapping": "^2.11.27"
   }
 }
