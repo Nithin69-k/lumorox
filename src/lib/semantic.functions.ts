@@ -208,6 +208,8 @@ async function ensureEmbedding(tmdbId: string): Promise<boolean> {
   if (existing) return false;
   const details = await detailsForEmbedding(tmdbId);
   if (!details) return false;
+  // Cap brand-new paid embeddings; existing ones remain free to use.
+  if (!allowEmbedCreate()) return false;
   const text_hash = await hashText(details.embedText);
   const embedding = await embedText(details.embedText);
   await supabaseAdmin.from("movie_embeddings" as never).upsert({
