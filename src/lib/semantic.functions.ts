@@ -521,5 +521,7 @@ export const askAi = createServerFn({ method: "POST" })
       ? `${matches.length} picks — ${bits.join(", ")}.`
       : `${matches.length} picks matched your request.`;
 
-    return { parsed, matches: matches.slice(0, 18), summary };
+    const result = { parsed, matches: matches.slice(0, 18), summary };
+    askCacheSet(cacheKey, result);
+    return result;
   });
