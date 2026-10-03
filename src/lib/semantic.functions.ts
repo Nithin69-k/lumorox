@@ -447,7 +447,25 @@ function normalizeList(items: TmdbListItem[] | undefined): Movie[] {
 export const askAi = createServerFn({ method: "POST" })
   .inputValidator((d: { q: string }) => z.object({ q: z.string().min(2).max(500) }).parse(d))
   .handler(async ({ data }): Promise<AskResult> => {
-    const parsed = await parseNlQuery(data.q);
+    const cacheKey = norm(data.q);
+    const cached = askCacheGet(cacheKey);
+    if (cached) return cached;
+
+    // Rate-limited: degrade to a free discover-only answer instead of paying
+    // for another AI parse when the instance is being hammered.
+    const parsed = allowAiParse()
+      ? await parseNlQuery(data.q)
+      : {
+          searchText: data.q,
+          genres: [],
+          yearMin: null,
+          yearMax: null,
+          minRating: null,
+          referenceTitle: null,
+          mood: null,
+          language: null,
+          titles: [],
+        };
 
     // 1. Resolve the LLM's named titles against TMDB — these are the exact answers.
     const resolved = await Promise.all(parsed.titles.map(async (s) => {
